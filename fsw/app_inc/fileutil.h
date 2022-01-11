@@ -4,14 +4,21 @@
 ** Notes:
 **   None
 **
-** License:
-**   Written by David McComas, licensed under the copyleft GNU
-**   General Public License (GPL). 
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 #ifndef _file_util_
@@ -52,7 +59,8 @@
 ** If the state is (FILEUTIL_FILE_OPEN or FILEUTIL_FILE_CLOSED) then the
 ** file exists and is not a directory
 */
-typedef enum {
+typedef enum
+{
    
    FILEUTIL_FILENAME_INVALID  = 1,
    FILEUTIL_FILE_NONEXISTENT  = 2,
@@ -60,7 +68,7 @@ typedef enum {
    FILEUTIL_FILE_CLOSED       = 4,
    FILEUTIL_FILE_IS_DIR       = 5
 
-} FileUtil_FileState;
+} FileUtil_FileState_t;
 
 #define FILEUTIL_FILE_EXISTS(state) ((state==FILEUTIL_FILE_OPEN) || (state==FILEUTIL_FILE_CLOSED))
 
@@ -68,22 +76,24 @@ typedef enum {
 ** File Information
 */
 
-typedef struct {
+typedef struct
+{
 
    boolean IncludeSizeTime;
    uint32  Size;
    uint32  Time;
    uint32  Mode;
-   FileUtil_FileState State;
+   FileUtil_FileState_t State;
 
-} FileUtil_FileInfo;
+} FileUtil_FileInfo_t;
 
-typedef struct {
+typedef struct
+{
 
    boolean  IsOpen;
    char*    Name;
 
-} FileUtil_CheckFileState;
+} FileUtil_CheckFileState_t;
 
 
 /* 
@@ -91,21 +101,23 @@ typedef struct {
 ** the information is based on app's that have used the cFE's file
 ** API.
 */
-typedef struct {
+typedef struct
+{
 
-   char    Filename[OS_MAX_PATH_LEN];
-   char    AppName[OS_MAX_API_NAME];
-
-
-} FileUtil_OpenFileEntry;
+   char  Filename[OS_MAX_PATH_LEN];
+   char  AppName[OS_MAX_API_NAME];
 
 
-typedef struct {
+} FileUtil_OpenFileEntry_t;
+
+
+typedef struct
+{
 
    uint16   OpenCount;
-   FileUtil_OpenFileEntry Entry[OS_MAX_NUM_OPEN_FILES];
+   FileUtil_OpenFileEntry_t Entry[OS_MAX_NUM_OPEN_FILES];
 
-} FileUtil_OpenFileList;
+} FileUtil_OpenFileList_t;
 
 
 /************************/
@@ -133,7 +145,7 @@ boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen);
 ** returns file state (FileUtil_FileState) and optionally includes the file size
 ** and time for existing files.
 */
-FileUtil_FileInfo FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, boolean IncludeSizeTime);
+FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, boolean IncludeSizeTime);
 
 
 /******************************************************************************
@@ -145,7 +157,7 @@ FileUtil_FileInfo FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, bo
 ** Returns the number of open files as a convenience even though it's contained
 ** in the OpenFileList data struture.
 */
-uint16 FileUtil_GetOpenFileList(FileUtil_OpenFileList *OpenFileList);
+uint16 FileUtil_GetOpenFileList(FileUtil_OpenFileList_t *OpenFileList);
 
 
 /******************************************************************************
@@ -153,7 +165,7 @@ uint16 FileUtil_GetOpenFileList(FileUtil_OpenFileList *OpenFileList);
 **
 ** Return a string describing the FileUtil_FileState enumeration.
 */
-const char* FileUtil_FileStateStr(FileUtil_FileState  FileState);
+const char* FileUtil_FileStateStr(FileUtil_FileState_t  FileState);
 
 
 /******************************************************************************

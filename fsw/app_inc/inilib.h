@@ -5,13 +5,21 @@
 **   1. The enumeration macro design is from 
 **      https://stackoverflow.com/questions/147267/easy-way-to-use-variables-of-enum-types-as-string-in-c/202511 
 **
-** License:
-**   Written by David McComas, licensed under the copyleft GNU
-**   General Public License (GPL). 
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
+**
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 #ifndef _ini_lib_
 #define _ini_lib_
@@ -27,17 +35,18 @@
 **
 */
 
-typedef const char * (*INILIB_GetConfigFuncPtr) (int ConfigParam);
+typedef const char * (*INILIB_GetConfigFuncPtr_t) (int ConfigParam);
 
-typedef struct {
+typedef struct
+{
 
    int Start;
    int End;
    
-   INILIB_GetConfigFuncPtr  GetStr;
-   INILIB_GetConfigFuncPtr  GetType;
+   INILIB_GetConfigFuncPtr_t  GetStr;
+   INILIB_GetConfigFuncPtr_t  GetType;
 
-} INILIB_CfgEnum;
+} INILIB_CfgEnum_t;
 
 
 /******************************************************************************
@@ -73,7 +82,7 @@ typedef struct {
   typedef struct { \
     ENUM_DEF(STRUCT_VALUE) \
   } INITBL_##TypeName##Struct; \
-
+  
 /* 
 ** Define the access function names */
 /* - Get##TypeName##Str() & Get##TypeName##Type use int parameters instead of
@@ -98,7 +107,7 @@ typedef struct {
       default: return ""; /* handle input error */ \
     } \
   } \
-  static INILIB_CfgEnum IniCfgEnum = { CFG_ENUM_START, CFG_ENUM_END, Get##TypeName##Str, Get##TypeName##Type }; \
+  static INILIB_CfgEnum_t IniCfgEnum = { CFG_ENUM_START, CFG_ENUM_END, Get##TypeName##Str, Get##TypeName##Type }; \
   
 /*
 ** Remove this unused function to avoid compiler warnings

@@ -2,17 +2,24 @@
 ** Purpose: C App Framework packet utilities
 **
 ** Notes:
-**   1. PktUtil_IsPacketFiltered is taken from cfs_utils. My initial motivation
-**      was the macros defined in C file and not a header and no structures.
-**
-** License:
-**   Written by David McComas, licensed under the copyleft GNU
-**   General Public License (GPL). 
+**   1. PktUtil_IsPacketFiltered originated from cfs_utils and the preserves
+**      'N of X with offset O' algorithm.
 **
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 #ifndef _pkt_util_
@@ -67,32 +74,36 @@
 ** or tables that accept a filter type.
 */
 
-typedef enum {
+typedef enum
+{
    
    PKTUTIL_FILTER_ALWAYS     = 1,
    PKTUTIL_FILTER_BY_SEQ_CNT = 2,
    PKTUTIL_FILTER_BY_TIME    = 3,
    PKTUTIL_FILTER_NEVER      = 4
    
-} PktUtil_FilterType;
+} PktUtil_FilterType_t;
+
 
 /* 
 ** N of X packets ("group size") will be sent starting at offset O
 */ 
-typedef struct {
+typedef struct
+{
    
    uint16 N;
    uint16 X;
    uint16 O;
    
-} PktUtil_FilterParam;
+} PktUtil_FilterParam_t;
 
-typedef struct {
+typedef struct
+{
    
-   PktUtil_FilterType   Type;
-   PktUtil_FilterParam  Param;
+   PktUtil_FilterType_t   Type;
+   PktUtil_FilterParam_t  Param;
 
-} PktUtil_Filter;
+} PktUtil_Filter_t;
 
 
 /*
@@ -100,12 +111,13 @@ typedef struct {
 ** repeat the definition. 
 */
 
-typedef struct {
+typedef struct
+{
 
-    uint8 CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   uint8 Header[CFE_SB_CMD_HDR_SIZE];
 
-} PKTUTIL_NoParamCmdMsg;
-#define PKTUTIL_NO_PARAM_CMD_DATA_LEN  ((sizeof(PKTUTIL_NoParamCmdMsg) - CFE_SB_CMD_HDR_SIZE))
+} PKTUTIL_NoParamCmdMsg_t;
+#define PKTUTIL_NO_PARAM_CMD_DATA_LEN  ((sizeof(PKTUTIL_NoParamCmdMsg_t) - CFE_SB_CMD_HDR_SIZE))
 
 
 /************************/
@@ -117,14 +129,14 @@ typedef struct {
 ** Function: PktUtil_IsPacketFiltered
 **
 */
-boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil_Filter *Filter);
+boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil_Filter_t *Filter);
 
 
 /******************************************************************************
 ** Function: PktUtil_IsFilterTypeValid
 **
 ** Notes:
-**   1. Intended for for parameter validation. It uses uint16 becaue command
+**   1. Intended for for parameter validation. It uses uint16 because command
 **      packet definitions typically don't use enumerated types so they can 
 **      control the storage size (prior to C++11).
 */

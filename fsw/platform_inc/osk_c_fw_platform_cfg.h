@@ -47,8 +47,9 @@
 **
 */
 
-#define  INITBL_MAX_CFG_ITEMS  30   /* Max number of JSON ini file configuration items */
-
+#define  INITBL_MAX_CFG_ITEMS         32   /* Max number of JSON ini file config items */
+#define  INITBL_MAX_CFG_STR_LEN       64   /* This is INITTBL's storage max. A config parameter such as a filename may have more restrictive length constraints */ 
+#define  INITBL_MAX_JSON_FILE_CHAR  8192   /* Max number of JSON file characters       */
 
 /******************************************************************************
 ** Table Manager (TBLMGR)

@@ -28,21 +28,21 @@
 **        execution cycle are merged(logically ORed) with the message
 **   8. STATEREP_BIT_ID_MAX must be defined prior to including this header.
 **
-** License:
-**
-**   Copyright © 2007-2014 United States Government as represented by the 
-**   Administrator of the National Aeronautics and Space Administration. 
-**   All Other Rights Reserved.  
-**
-**   This software was created at NASA's Goddard Space Flight Center.
-**   This software is governed by the NASA Open Source Agreement and may be 
-**   used, distributed and modified only pursuant to the terms of that 
-**   agreement.
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 #ifndef  _staterep_
@@ -55,9 +55,9 @@
 #include "osk_c_fw_cfg.h"
 
 
-/*
-** Macro Definitions
-*/
+/***********************/
+/** Macro Definitions **/
+/***********************/
 
 
 /*
@@ -95,9 +95,9 @@
    #error STATEREP_BIT_ID_MAX must be a multiple of STATEREP_BITS_PER_WORD
 #endif
 
-/*
-** Type definitions
-*/
+/**********************/
+/** Type Definitions **/
+/**********************/
 
 
 /*
@@ -110,7 +110,7 @@ typedef enum
    STATEREP_NEW_REPORT   = 1,  /* Only report new state since last report    */
    STATEREP_MERGE_REPORT = 2   /* Boolean OR new states with previous report */
 
-} STATEREP_TlmMode;
+} STATEREP_TlmMode_t;
 
 
 
@@ -123,17 +123,17 @@ typedef struct
 
    uint16  Word[STATEREP_BITFIELD_WORDS];  /* Bit packed status */
 
-} STATEREP_Bits;
+} STATEREP_Bits_t;
 
 
 typedef struct
 {
 
-   uint8          Hdr[CFE_SB_TLM_HDR_SIZE];
-   STATEREP_Bits  Bits;
+   uint8            Hdr[CFE_SB_TLM_HDR_SIZE];
+   STATEREP_Bits_t  Bits;
 
-} STATEREP_TlmMsg;
-#define STATEREP_TLM_PKT_LEN  sizeof(STATEREP_TlmMsg)
+} STATEREP_TlmMsg_t;
+#define STATEREP_TLM_PKT_LEN  sizeof(STATEREP_TlmMsg_t)
 
 
 /******************************************************************************
@@ -146,8 +146,8 @@ typedef struct
    uint8    CmdHeader[CFE_SB_CMD_HDR_SIZE];
    uint16   Id;        /* Single identifier: 0..(STATEREP_BIT_ID_MAX-1) or STATEREP_SELECT_ALL */
 
-} STATEREP_ClearBitCmdMsg;
-#define STATEREP_CLEAR_BIT_CMD_DATA_LEN  (sizeof(STATEREP_ClearBitCmdMsg) - CFE_SB_CMD_HDR_SIZE)
+} STATEREP_ClearBitCmdMsg_t;
+#define STATEREP_CLEAR_BIT_CMD_DATA_LEN  (sizeof(STATEREP_ClearBitCmdMsg_t) - CFE_SB_CMD_HDR_SIZE)
 
 
 typedef struct
@@ -157,8 +157,8 @@ typedef struct
    uint16   Id;           /* Single identifier: 0..(STATEREP_BIT_ID_MAX-1) or STATEREP_SELECT_ALL */
    uint16   Enable;       /* TRUE - Enable an ID, FALSE - Disable an ID (keep word aligned)       */
 
-} STATEREP_ConfigBitCmdMsg;
-#define STATEREP_CONFIG_BIT_CMD_DATA_LEN  (sizeof(STATEREP_ConfigBitCmdMsg) - CFE_SB_CMD_HDR_SIZE)
+} STATEREP_ConfigBitCmdMsg_t;
+#define STATEREP_CONFIG_BIT_CMD_DATA_LEN  (sizeof(STATEREP_ConfigBitCmdMsg_t) - CFE_SB_CMD_HDR_SIZE)
 
 
 
@@ -184,7 +184,7 @@ typedef struct
    uint16   Enabled[STATEREP_BITFIELD_WORDS];   /* 0 = Disabled, 1 = Enabled */
    uint16   Latched[STATEREP_BITFIELD_WORDS];   /* 0 = Never set to 1(true), 1 = Set to 1 since last cleared */
 
-} STATEREP_BitConfig;
+} STATEREP_BitConfig_t;
 
 
 /*
@@ -194,17 +194,17 @@ typedef struct
 typedef struct
 {
 
-   STATEREP_TlmMode    TlmMode;
-   STATEREP_BitConfig  BitConfig;
-   STATEREP_Bits       CurrBits;   /* Collected between SendTlmMsg() calls */
-   STATEREP_TlmMsg     TlmMsg;     /* Last TLM message sent                */
+   STATEREP_TlmMode_t    TlmMode;
+   STATEREP_BitConfig_t  BitConfig;
+   STATEREP_Bits_t       CurrBits;   /* Collected between SendTlmMsg() calls */
+   STATEREP_TlmMsg_t     TlmMsg;     /* Last TLM message sent                */
 
-} STATEREP_Class;
+} STATEREP_Class_t;
 
 
-/*
-** Exported Functions
-*/
+/************************/
+/** Exported Functions **/
+/************************/
 
 
 /******************************************************************************
@@ -221,8 +221,8 @@ typedef struct
 **      default is STATEREP_NEW_REPORT.
 **
 */
-void STATEREP_Constructor(STATEREP_Class*  StateRep, 
-                          uint16           IdCnt);      /* Number of state definition IDs used (not an index, but a count) */
+void STATEREP_Constructor(STATEREP_Class_t*  StateRep, 
+                          uint16             IdCnt);      /* Number of state definition IDs used (not an index, but a count) */
                              
 
 
@@ -233,7 +233,7 @@ void STATEREP_Constructor(STATEREP_Class*  StateRep,
 **          packet for a single state bit or for all of the state bits.
 **
 ** Note:
-**   1. This function must comply with the CMDMGR_CmdFuncPtr definition
+**   1. This function must comply with the CMDMGR_CmdFuncPtr_t definition
 **   2. If the command message parameter Id is set to STATEREP_SELECT_ALL
 **      then all state IDs are affected otherwise it's interpreted as a
 **      single ID.
@@ -254,7 +254,7 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
 ** Purpose:  Configure a state definition bit to be enabled or disabled.
 **
 ** Note:
-**   1. This function must comply with the CMDMGR_CmdFuncPtr definition
+**   1. This function must comply with the CMDMGR_CmdFuncPtr_t definition
 **   2. If the command parameter bit ID is set to STATEREP_SELECT_ALL then
 **      all bit IDs are affected otherwise it's interpreted as a  single ID.
 **   3. The EnableFlag is defined as:
@@ -282,8 +282,8 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
 **   2. An Applicaton can use STATEREP_SetTlmMode to change the behavior 
 **      of this function. See STATEREP_SetTlmMode prologue.
 */
-void STATEREP_GenTlmMsg(STATEREP_Class*  StateRep,
-                        STATEREP_TlmMsg* TlmMsg);
+void STATEREP_GenTlmMsg(STATEREP_Class_t*  StateRep,
+                        STATEREP_TlmMsg_t* TlmMsg);
                            
                            
 /******************************************************************************
@@ -296,8 +296,8 @@ void STATEREP_GenTlmMsg(STATEREP_Class*  StateRep,
 **      only occur during integration.
 **
 */
-void STATEREP_SetBit(STATEREP_Class*  StateRep,
-                     uint16           Id);  /* Integer identifier (not a bit bit mask) */
+void STATEREP_SetBit(STATEREP_Class_t*  StateRep,
+                     uint16             Id);  /* Integer identifier (not a bit bit mask) */
 
 
 
@@ -316,8 +316,8 @@ void STATEREP_SetBit(STATEREP_Class*  StateRep,
 **      communication.
 **
 */
-void STATEREP_SetTlmMode(STATEREP_Class*  StateRep,
-                         STATEREP_TlmMode TlmMode);
+void STATEREP_SetTlmMode(STATEREP_Class_t*  StateRep,
+                         STATEREP_TlmMode_t TlmMode);
 
 
 /******************************************************************************
@@ -328,7 +328,7 @@ void STATEREP_SetTlmMode(STATEREP_Class*  StateRep,
 ** Notes:
 **   None
 */
-const char* STATEREP_TlmModeStr(STATEREP_TlmMode  TlmMode);
+const char* STATEREP_TlmModeStr(STATEREP_TlmMode_t  TlmMode);
 
 
 #endif  /* _staterep_ */

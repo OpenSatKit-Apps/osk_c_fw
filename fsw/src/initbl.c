@@ -1,18 +1,34 @@
 /*
-** Purpose: Application Init Configuration Table
+** Purpose: Application Initialization Configuration Table
 **
 ** Notes:
-**   None
-**
-** License:
-**   Written by David McComas, licensed under the copyleft GNU General
-**   Public License (GPL).
+**   1. Apps interface with IniTbl using the 'CFG_' definitions in
+**      their app_cfg.h file. There are some details hidden from the API
+**      that maintainers of this file should know. 'CFG_' definitions use
+**      an IniLib enumtype that defines the first enumeration as 'start'
+**      with a value of 0. The 'CFG_' parameter enum definitions follow
+**      'start' so their values begin at 1. The 'CFG_' parameters are used
+**      as an index into the config data stroage array IniTbl->CfgData[]
+**      and ('CFG_' - 1) is used to index into IniTbl->JsonParams[] because
+**      CJSON assumes [0] is a valid entry.
 **
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
+
 
 /*
 ** Include Files:
@@ -21,21 +37,14 @@
 #include <string.h>
 #include "initbl.h"
 
-/***********************/
-/** Macro Definitions **/
-/***********************/
-
-#define  JSON  &(IniTbl->Json)   /* Convenience macro */
-
 
 /************************************/
 /** Local File Function Prototypes **/
 /************************************/
 
-static boolean ConfigCallback (void* UserData, int TokenIdx);  /* Must match JSON_ContainerFuncPtr */
-static const char* ConfigTypeStr(INITBL_Type Type);
-static boolean LoadConfigurations(INITBL_Class* IniTbl, const char* IniFile);
-static boolean ValidConfigParam(INITBL_Class* IniTbl, uint16 Param, INITBL_Type Type);
+static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl);
+static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr);
+static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type);
 
 
 /******************************************************************************
@@ -45,35 +54,25 @@ static boolean ValidConfigParam(INITBL_Class* IniTbl, uint16 Param, INITBL_Type 
 **    1. This must be called prior to any other functions
 **
 */
-boolean INITBL_Constructor(INITBL_Class* IniTbl, const char* IniFile,
-                           INILIB_CfgEnum* CfgEnum)
+boolean INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniTblFile,
+                           INILIB_CfgEnum_t* CfgEnum)
 {
    
    boolean RetStatus = FALSE;
    
-   CFE_PSP_MemSet(IniTbl, 0, sizeof(INITBL_Class));
+   CFE_PSP_MemSet(IniTbl, 0, sizeof(INITBL_Class_t));
    IniTbl->CfgEnum = *CfgEnum;
  
-   /* Subtract 2 to account for CfgEnum 'start' and 'end' definitions */ 
-   if ((IniTbl->CfgEnum.End-2) < INITBL_MAX_CFG_ITEMS) {
-   
-      JSON_Constructor(JSON, IniTbl->JsonFileBuf, IniTbl->JsonFileTokens);
-      
-      JSON_ObjConstructor(&(IniTbl->JsonObj[INITBL_OBJ_CONFIG]),
-                          INITBL_OBJ_CONFIG_NAME,
-                          ConfigCallback,
-                          (void *)(IniTbl));
-      
-      JSON_RegContainerCallback(JSON, &(IniTbl->JsonObj[INITBL_OBJ_CONFIG]));
-
-      RetStatus = LoadConfigurations(IniTbl, IniFile);
-   
+ 
+   if (BuildJsonTblObjArray (IniTbl))
+   {
+      RetStatus = CJSON_ProcessFileAlt(IniTblFile, IniTbl->JsonBuf, INITBL_MAX_JSON_FILE_CHAR, LoadJsonData, IniTbl);
    }
-   else {
-   
-      CFE_EVS_SendEvent(INITBL_CONFIG_DEF_ERR_EID, CFE_EVS_ERROR, "JSON INITBL definition error. JSON config file contains % d which is greater than frame maximum defined at %d",
+   else 
+   {
+      CFE_EVS_SendEvent(INITBL_CONFIG_DEF_ERR_EID, CFE_EVS_ERROR,
+                        "JSON INITBL definition error. JSON config file contains % d which is greater than frame maximum defined at %d",
                         IniTbl->CfgEnum.End, INITBL_MAX_CFG_ITEMS);
-   
    }
    
    return RetStatus;
@@ -86,24 +85,24 @@ boolean INITBL_Constructor(INITBL_Class* IniTbl, const char* IniFile,
 **
 ** Notes:
 **    1. This does not return a status as to whether the configuration 
-**       parameter was successfully retrieved. The logic for retreiving
+**       parameter was successfully retrieved. The logic for retrieving
 **       parameters should be simple and any issues should be resolved during
 **       testing.
 **    2. If the parameter is out of range or of the wrong type, a zero is
 **       returned and an event message is sent.
 **
 */
-uint32 INITBL_GetIntConfig(INITBL_Class* IniTbl, uint16 Param)
+uint32 INITBL_GetIntConfig(INITBL_Class_t* IniTbl, uint16 Param)
 {
    
    uint32 RetValue = 0;
+   uint16 JsonObjIndex = (Param-1);
    
-   if (ValidConfigParam(IniTbl, Param, INITBL_UINT32)) {
-   
-      RetValue = IniTbl->CfgItem[Param].Int;
-      
+   if (ValidJsonObjCfg(IniTbl, JsonObjIndex, JSONNumber))
+   {
+      RetValue = IniTbl->CfgData[Param].Int;
    }
-   
+
    return RetValue;
    
 } /* INITBL_GetIntConfig() */
@@ -114,214 +113,200 @@ uint32 INITBL_GetIntConfig(INITBL_Class* IniTbl, uint16 Param)
 **
 ** Notes:
 **    1. This does not return a status as to whether the configuration 
-**       parameter was successfully retrieved. The logic for retreiving
+**       parameter was successfully retrieved. The logic for retrieving
 **       parameters should be simple and any issues should be resolved during
 **       testing.
 **    2. If the parameter is out of range or of the wrong type, a null string 
 **       is returned and an event message is sent.
 **
 */
-const char* INITBL_GetStrConfig(INITBL_Class* IniTbl, uint16 Param)
+const char* INITBL_GetStrConfig(INITBL_Class_t* IniTbl, uint16 Param)
 {
    
-   const char*  RetStrPtr = NULL;
+   const char* RetStrPtr = NULL;
+   uint16      JsonObjIndex = (Param-1);
    
-   if (ValidConfigParam(IniTbl, Param, INITBL_STR)) {
-   
-      RetStrPtr = IniTbl->CfgItem[Param].Str;
-      
+   if (ValidJsonObjCfg(IniTbl, JsonObjIndex, JSONString))
+   {
+      RetStrPtr = IniTbl->CfgData[Param].Str;
    }
-   
+
    return RetStrPtr;
    
 } /* INITBL_GetStrConfig() */
 
 
-
 /******************************************************************************
-** Function: LoadConfigurations
-**
-** Purpose: Load configurations defined in the app ini file.
-**
-*/
-static boolean LoadConfigurations(INITBL_Class* IniTbl, const char* IniFile)
-{
-
-   boolean RetStatus = FALSE;
-    
-   if (DBG_INITBL) OS_printf("Enter LoadConfigurations()\n");  
-   
-   if (JSON_OpenFile(JSON, IniFile)) {
-  
-      if (DBG_INITBL) OS_printf( "LoadConfigurations() Successfully prepared JSON file %s\n", IniFile);
-
-      JSON_ProcessTokens(JSON);
-
-      if (IniTbl->AttrErrCnt == 0) {
-      
-         if (DBG_INITBL) OS_printf("LoadConfigurations() Successfully initialized %d configurations\n", 
-                                   IniTbl->JsonVarCnt);
-         RetStatus = TRUE;
-         
-      } /* End if no attribute errors */
-      else {
-         
-         CFE_EVS_SendEvent(INITBL_LOAD_CONFIG_ERR_EID, CFE_EVS_ERROR, "LoadConfigurations() failed with %d JSON attribute errors",
-                           IniTbl->AttrErrCnt);
-         
-      }
-      
-   } /* End if valid file */
-   else {
-      
-      CFE_EVS_SendEvent(INITBL_LOAD_CONFIG_ERR_EID, CFE_EVS_ERROR, "FileMgr::LoadConfigurations() Error preparing JSON file %s\n", IniFile);
-
-   } /* End if file processing error */
-
-    
-   return RetStatus;
-
-} /* End of LoadConfigurations() */
-
-
-/******************************************************************************
-** Function: ConfigTypeStr
-**
-** Purpose: Return a pointer to a string describing a configuration type
+** Function: BuildJsonTblObjArray
 **
 ** Notes:
-**   1. Can't assume type is valid INITBL_Type so perform range checking.
-*/
-static const char* ConfigTypeStr(INITBL_Type Type)
-{
-   
-   static const char* TypeStr[] = {
-      "UNDEF",
-      "UINT32",
-      "STRING"
-   };
-
-   uint8 i = 0;
-   
-   if ( Type == INITBL_UINT32 || Type == INITBL_STR) {
-   
-      i = Type;
-   
-   }
-
-   return TypeStr[i];
-
-} /* End ConfigTypeStr() */
-
-
-/******************************************************************************
-** Function: ConfigCallback
-**
-** Process a packet table entry.
-**
-** Notes:
-**   1. This must have the same function signature as JSON_ContainerFuncPtr.
-**   2. JSON_ObjConstructor() must be called with a pointer to an INITBL_Class
-**      instance. 
-**   3. A single JSON structure defines all of the initialization 
-**      configurations that are processed by this function
+**   1. This uses the INILIB parameter definitions to create an array of 
+**      CJSON_Obj_t that can be used to process the JSON ini file.
 **
 */
-static boolean ConfigCallback (void* UserData, int TokenIdx)
+static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
 {
 
-   INITBL_Class* IniTbl = (INITBL_Class*)UserData;
-   int    Param;
-   uint32 JsonIntData;
-   char   JsonStrData[OS_MAX_PATH_LEN] = "\0";
+   boolean RetStatus = TRUE;
+   int Param, i;
    const char *CfgStrPtr;
    const char *CfgTypePtr;
-   boolean RetStatus = FALSE;      
+   
+   
+   IniTbl->JsonParamCnt = 0;
 
-   IniTbl->JsonVarCnt = 0;
+   /* 
+   ** IniTbl->CfgEnum.Start is defined as 0 so the first array index is unused.
+   ** 'i' starts at 0 and is used to index IniTbl->JsonParams[] because the CJSON
+   ** assumes [0] is a valid entry. See file prologue for more details. 
+   */
+   if (IniTbl->CfgEnum.End <= (INITBL_MAX_CFG_ITEMS+1))
+   {
   
-   for ( Param=(IniTbl->CfgEnum.Start+1); Param < IniTbl->CfgEnum.End; Param++) {
+      IniTbl->JsonParamCnt = IniTbl->CfgEnum.End - 1;
+      
+      for ( Param=(IniTbl->CfgEnum.Start+1),i=0; Param < IniTbl->CfgEnum.End; Param++,i++)
+      {
    
-      CfgStrPtr  = (IniTbl->CfgEnum.GetStr)(Param);
-      CfgTypePtr = (IniTbl->CfgEnum.GetType)(Param);
-            
-      if (!strcmp(INILIB_TYPE_INT,CfgTypePtr)) {
-      
-         if (JSON_GetValUint32(&(IniTbl->Json), TokenIdx, CfgStrPtr, &JsonIntData)) {
-            ++IniTbl->JsonVarCnt; 
-            IniTbl->CfgItem[Param].Initialized = TRUE;
-            IniTbl->CfgItem[Param].Type   = INITBL_UINT32;
-            IniTbl->CfgItem[Param].Int    = (uint32) JsonIntData;
-            IniTbl->CfgItem[Param].Str[0] = '\0';
-            if (DBG_INITBL) OS_printf("IniTbl->CfgItem[%d].Int=%u, 0x%08X\n", Param, IniTbl->CfgItem[Param].Int, IniTbl->CfgItem[Param].Int);
-         }
+         CfgStrPtr  = (IniTbl->CfgEnum.GetStr)(Param);
+         CfgTypePtr = (IniTbl->CfgEnum.GetType)(Param);
          
-      } /* End if uint32 */
-      else {
+         CJSON_Obj_t *JsonParam = &IniTbl->JsonParams[i];
+         
+         if (strcmp(CfgTypePtr, INILIB_TYPE_INT) == 0)
+         {
       
-         if (JSON_GetValStr(&(IniTbl->Json), TokenIdx, CfgStrPtr, JsonStrData)) { 
-            ++IniTbl->JsonVarCnt;
-            IniTbl->CfgItem[Param].Initialized = TRUE;
-            IniTbl->CfgItem[Param].Type = INITBL_STR;
-            IniTbl->CfgItem[Param].Int  = 0;
-            strcpy(IniTbl->CfgItem[Param].Str,JsonStrData);
-            if (DBG_INITBL) OS_printf("IniTbl->CfgItem[%d].Str=%s\n", Param, IniTbl->CfgItem[Param].Str);
+            JsonParam->TblData      = &IniTbl->CfgData[Param].Int;
+            JsonParam->TblDataLen   = sizeof(uint32);
+            JsonParam->Updated      = FALSE;
+            JsonParam->Type         = JSONNumber;
+            strncpy(JsonParam->Query.Key, INITBL_JSON_CONFIG_OBJ_PREFIX, CJSON_MAX_KEY_LEN);
+            strncat(JsonParam->Query.Key, CfgStrPtr, CJSON_MAX_KEY_LEN);
+            JsonParam->Query.KeyLen = strlen(JsonParam->Query.Key);
+         
+         } /* End if integer */
+         else if (strcmp(CfgTypePtr, INILIB_TYPE_STR) == 0)
+         {
+
+            JsonParam->TblData      = &IniTbl->CfgData[Param].Str;
+            JsonParam->TblDataLen   = INITBL_MAX_CFG_STR_LEN;
+            JsonParam->Updated      = FALSE;
+            JsonParam->Type         = JSONString;
+            strncpy(JsonParam->Query.Key, INITBL_JSON_CONFIG_OBJ_PREFIX, CJSON_MAX_KEY_LEN);
+            strncat(JsonParam->Query.Key, CfgStrPtr, CJSON_MAX_KEY_LEN);
+            JsonParam->Query.KeyLen = strlen(JsonParam->Query.Key);
+
+         }  /* End if string */
+         else 
+         {
+            RetStatus = FALSE;
+            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
+                               "Invalid Configuration parameter type %s", CfgTypePtr);
          }
 
-      }  /* End if char* */   
-   } /* End enum loop */
-   
-   
-   if (IniTbl->JsonVarCnt == (IniTbl->CfgEnum.End-1)) {
-   
-      RetStatus = TRUE;
-      CFE_EVS_SendEvent(INITBL_JSON_PARSE_EID, CFE_EVS_INFORMATION, "Successfully configured %d initialization file attributes",
-                        IniTbl->JsonVarCnt);
-         
-   } /* End if valid JsonVarCnt */
-   else {
-	   
-      ++IniTbl->AttrErrCnt;     
-      CFE_EVS_SendEvent(INITBL_JSON_PARSE_ERR_EID, CFE_EVS_ERROR, "Invalid number of packet attributes %d. Should be %d.",
-                        IniTbl->JsonVarCnt, (IniTbl->CfgEnum.End-1));
-   
-   } /* End if invalid JsonVarCnt */
+      } /* End Param loop */      
+   } /* End if valid number of paramaters */
+   else
+   {
       
+      RetStatus = FALSE;
+      CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
+                        "Number of configuration parameters %d is greater than IniTbl max %d",
+                        IniTbl->CfgEnum.End, (INITBL_MAX_CFG_ITEMS+1));
+                      
+   } /* End if invalid number of paramaters */     
+   
+   
    return RetStatus;
 
-} /* ConfigCallback() */
+} /* BuildJsonTblObjArray() */
+
 
 
 /******************************************************************************
-** Function: ValidConfigParam
+** Function: LoadJsonData
+**
+** Notes:
+**  1. This is a callback function from CJSON. All of the initialization
+**     configuration parameters should be defined and it is considered and
+**     error if this is not the case.
+*/
+static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
+{
+
+   boolean         RetStatus = FALSE;
+   size_t          ObjLoadCnt;
+   INITBL_Class_t* IniTbl = (INITBL_Class_t*)UserDataPtr; 
+
+
+   IniTbl->JsonFileLen = JsonFileLen;
+   
+   ObjLoadCnt = CJSON_LoadObjArray(IniTbl->JsonParams, IniTbl->JsonParamCnt, IniTbl->JsonBuf, IniTbl->JsonFileLen);
+
+   if (ObjLoadCnt == IniTbl->JsonParamCnt)
+   {
+      RetStatus = TRUE;
+      CFE_EVS_SendEvent(INITBL_LOAD_JSON_EID, CFE_EVS_INFORMATION, 
+                        "JSON initialization file successfully processed with %ld parameters",
+                        IniTbl->JsonParamCnt);
+   }
+   else
+   {
+      CFE_EVS_SendEvent(INITBL_LOAD_JSON_ERR_EID, CFE_EVS_ERROR, 
+                        "Error processing JSON initialization file. %ld of %ld parameters processed",
+                        ObjLoadCnt, IniTbl->JsonParamCnt);  
+   }
+   
+   return RetStatus;
+   
+} /* End LoadJsonData() */
+
+
+/******************************************************************************
+** Function: ValidJsonObjCfg
 **
 */
-static boolean ValidConfigParam(INITBL_Class* IniTbl, uint16 Param, INITBL_Type Type)
+static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type)
 {
    
    boolean RetStatus = FALSE;
    
-   if ( Param > IniTbl->CfgEnum.Start && Param < IniTbl->CfgEnum.End) {
    
-      if (IniTbl->CfgItem[Param].Initialized) {
-         if (IniTbl->CfgItem[Param].Type == Type) {
+   CFE_EVS_SendEvent(INITBL_CFG_PARAM_EID, CFE_EVS_DEBUG,
+                     "ValidJsonObjCfg %d: Type = %s, Key %s with type %s\n", 
+                     JsonObjIndex, CJSON_ObjTypeStr(Type), 
+                     IniTbl->JsonParams[JsonObjIndex].Query.Key, 
+                     CJSON_ObjTypeStr(IniTbl->JsonParams[JsonObjIndex].Type));      
+   
+   if ( JsonObjIndex >= IniTbl->CfgEnum.Start && JsonObjIndex < IniTbl->CfgEnum.End) 
+   {
+   
+      if (IniTbl->JsonParams[JsonObjIndex].Updated)
+      {
+         if (IniTbl->JsonParams[JsonObjIndex].Type == Type)
+         {
             RetStatus = TRUE;
          }
-         else {
-            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, "Attempt to retrieve parameter of type %s that was loaded as type %s",
-                              ConfigTypeStr(Type),ConfigTypeStr(IniTbl->CfgItem[Param].Type));      
+         else
+         {
+            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, 
+                              "Attempt to retrieve parameter of type %s that was loaded as type %s",
+                              CJSON_ObjTypeStr(Type), CJSON_ObjTypeStr(IniTbl->JsonParams[JsonObjIndex].Type));      
          }
       }
-      else {
-         CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, "Attempt to retrieve uninitialized parameter %d", Param);
+      else
+      {
+         CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, 
+                           "Attempt to retrieve uninitialized parameter %d",
+                           JsonObjIndex);
       }         
    }
-   else {
+   else
+   {
       CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, "Attempt to retrieve invalid parameter %d that is not in valid range: %d < param < %d",
-                        Param, IniTbl->CfgEnum.Start, IniTbl->CfgEnum.End);
+                        JsonObjIndex, IniTbl->CfgEnum.Start, IniTbl->CfgEnum.End);
    }
    
    return RetStatus;
    
-} /* ValidConfigParam() */
-
+} /* ValidJsonObjCfg() */

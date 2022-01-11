@@ -12,17 +12,27 @@
 **        could be provided with a table validation callback but when I looked
 **        into the user table-to-CJSON interface it got more complex. The
 **        amount of code a user needs to write with the current design is 
-**        trivial and it allows more control expecially for partial table load
+**        trivial and it allows more control especially for partial table load
 **        situations.
-**
-** License:
-**   Written by David McComas and licensed under the GNU
-**   Lesser General Public License (LGPL).
+**   4. Supported JSON types as defined by core_json
+**      - JSONNumber
+**      - JSONString
 **
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 #ifndef _cjson_
 #define _cjson_
@@ -38,7 +48,7 @@
 /** Macro Definitions **/
 /***********************/
 
-#define CJSON_MAX_KEY_LEN  32  /* Number of characters in key, does not include a string terminator */ 
+#define CJSON_MAX_KEY_LEN  64  /* Number of characters in key, does not include a string terminator */ 
 
 /*
 ** Event Message IDs
@@ -48,7 +58,7 @@
 #define CJSON_PROCESS_FILE_ERR_EID   (CJSON_BASE_EID + 1)
 #define CJSON_LOAD_OBJ_EID           (CJSON_BASE_EID + 2)
 #define CJSON_LOAD_OBJ_ERR_EID       (CJSON_BASE_EID + 3)
-
+#define CJSON_INTERNAL_ERR_EID       (CJSON_BASE_EID + 4)
 
 /**********************/
 /** Type Definitions **/
@@ -56,26 +66,49 @@
 
 /* TODO - Consider refactor into 2 structures so one can be passed as a const */
 
-typedef struct {
+typedef struct
+{
 
    char     Key[CJSON_MAX_KEY_LEN];
    size_t   KeyLen;
 
-} CJSON_Query;
+} CJSON_Query_t;
 
-typedef struct {
+typedef struct
+{
 
-   void*        TblData;
-   size_t       TblDataLen;
-   boolean      Updated;
-   JSONTypes_t  Type;
-   CJSON_Query  Query;
+   void*          TblData;
+   size_t         TblDataLen;
+   boolean        Updated;
+   JSONTypes_t    Type;
+   CJSON_Query_t  Query;
 
-} CJSON_Obj;
+} CJSON_Obj_t;
+
+
+/*
+** These structures are helpful when processing JSON tables with more complex 
+** data structures such as arrays. The CJSON_LoadObj*() methods are typically
+** used as each array element is processed. It's often convenient to defined
+** both CJSON_OBJ information with the data storage.
+*/
+
+typedef struct
+{
+   CJSON_Obj_t  Obj;
+   uint16       Value;
+} CJSON_IntObj_t;
+
+typedef struct
+{
+   CJSON_Obj_t  Obj;
+   char         Value[INITBL_MAX_CFG_STR_LEN];
+} CJSON_StrObj_t;
 
 
 /* User callback function to load table data */
-typedef boolean (*CJSON_LoadJsonData)(size_t JsonFileLen);
+typedef boolean (*CJSON_LoadJsonData_t)(size_t JsonFileLen);
+typedef boolean (*CJSON_LoadJsonDataAlt_t)(size_t JsonFileLen, void* UserDataPtr);
 
 
 /************************/
@@ -92,7 +125,7 @@ typedef boolean (*CJSON_LoadJsonData)(size_t JsonFileLen);
 **   1. See file prologue for supported JSON types.
 **
 */
-void CJSON_ObjConstructor(CJSON_Obj* Obj, const char* QueryKey, 
+void CJSON_ObjConstructor(CJSON_Obj_t* Obj, const char* QueryKey, 
                           JSONTypes_t JsonType, void* TblData, size_t TblDataLen);
 
 
@@ -100,10 +133,24 @@ void CJSON_ObjConstructor(CJSON_Obj* Obj, const char* QueryKey,
 ** Function: CJSON_LoadObj
 **
 ** Notes:
-**   1. See file prologue for supported JSON types.
+**   1. It is considered an error if the object is not found 
+**   2. See file prologue for supported JSON types.
 **
 */
-boolean CJSON_LoadObj(CJSON_Obj* Obj, const char* Buf, size_t BufLen);
+boolean CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
+
+
+/******************************************************************************
+** Function: CJSON_LoadObjOptional
+**
+** Notes:
+**   1. If the object is not found an event message is not sent. This is useful
+**      for objects that are optional or when an array is being traversed until
+**      an entry is not found
+**   2. See file prologue for supported JSON types.
+**
+*/
+boolean CJSON_LoadObjOptional(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
 
 
 /******************************************************************************
@@ -113,7 +160,16 @@ boolean CJSON_LoadObj(CJSON_Obj* Obj, const char* Buf, size_t BufLen);
 **   1. See file prologue for supported JSON types.
 **
 */
-size_t CJSON_LoadObjArray(CJSON_Obj* Obj, size_t ObjCnt, char* Buf, size_t BufLen);
+size_t CJSON_LoadObjArray(CJSON_Obj_t* Obj, size_t ObjCnt, char* Buf, size_t BufLen);
+
+
+/******************************************************************************
+** Function: CJSON_ObjTypeStr
+**
+** Notes:
+**   1. Returns a string for the enumerated type. 
+*/
+const char* CJSON_ObjTypeStr(JSONTypes_t  ObjType);
 
 
 /******************************************************************************
@@ -121,13 +177,23 @@ size_t CJSON_LoadObjArray(CJSON_Obj* Obj, size_t ObjCnt, char* Buf, size_t BufLe
 **
 ** Notes:
 **  1. Takes care of all generic table processing and validation. User's 
-**     callback function performs table-specific data processing
+**     callback function performs table-specific data processing.
 */
 boolean CJSON_ProcessFile(const char* Filename, char* JsonBuf, 
-                          size_t MaxJsonFileChar, CJSON_LoadJsonData LoadJsonData);
+                          size_t MaxJsonFileChar, CJSON_LoadJsonData_t LoadJsonData);
 
+
+/******************************************************************************
+** Function: CJSON_ProcessFileAlt
+**
+** Notes:
+**  1. Takes care of all generic table processing and validation. User's 
+**     callback function performs table-specific data processing
+**  2. Same functionality as CJSON_ProcessFile except the callback function
+**     has the UserDataPtr passed as a parameter.
+*/
+boolean CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf, 
+                            size_t MaxJsonFileChar, CJSON_LoadJsonDataAlt_t LoadJsonDataAlt,
+                            void* UserDataPtr);
 
 #endif /* _cjson_ */
-
-
-

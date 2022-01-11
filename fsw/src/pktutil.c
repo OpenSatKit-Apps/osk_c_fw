@@ -4,15 +4,23 @@
 ** Notes:
 **   1. See header file.
 **
-** License:
-**   Written by David McComas, licensed under the copyleft GNU
-**   General Public License (GPL). 
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
+
 
 /*
 ** Includes
@@ -23,9 +31,6 @@
 #include "cfe.h"
 #include "pktutil.h"
 
-/*********************/
-/** Local Functions **/
-/*********************/
 
 /******************************************************************************
 ** Function: PktUtil_IsPacketFiltered
@@ -35,7 +40,7 @@
 **   X = out of every group of this many packets
 **   O = starting at this offset within the group
 */
-boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Filter *Filter)
+boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Filter_t* Filter)
 {        
 
    boolean PacketIsFiltered = TRUE;
@@ -59,14 +64,17 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
    if ((Filter->Param.X != 0) && 
        (Filter->Param.N != 0) && 
        (Filter->Param.N <= Filter->Param.X) &&
-       (Filter->Param.O <  Filter->Param.X)) {
+       (Filter->Param.O <  Filter->Param.X))
+   {
 
-      if (Filter->Type == PKTUTIL_FILTER_BY_SEQ_CNT) {
+      if (Filter->Type == PKTUTIL_FILTER_BY_SEQ_CNT)
+      {
       
          FilterValue = CCSDS_RD_SEQ(MsgPtr->Hdr);
       
       }
-      else if (Filter->Type == PKTUTIL_FILTER_BY_TIME) {
+      else if (Filter->Type == PKTUTIL_FILTER_BY_TIME)
+      {
          
          PacketTime = CFE_SB_GetMsgTime(MsgPtr);  
    
@@ -82,9 +90,11 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
             
       } /* End if filter by time */
 
-      if (FilterValue >= Filter->Param.O) {
+      if (FilterValue >= Filter->Param.O)
+      {
 
-         if (((FilterValue - Filter->Param.O) % Filter->Param.X) < Filter->Param.N) {
+         if (((FilterValue - Filter->Param.O) % Filter->Param.X) < Filter->Param.N)
+         {
 
             PacketIsFiltered = FALSE;
       
@@ -106,12 +116,12 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
 **      packet definitions typically don't use enumerated types so they can 
 **      control the storage size (prior to C++11).
 */
-boolean PktUtil_IsFilterTypeValid(uint16 FilterType) {
-   
+boolean PktUtil_IsFilterTypeValid(uint16 FilterType)
+{
+
    return ((FilterType >= PKTUTIL_FILTER_ALWAYS) &&
            (FilterType <= PKTUTIL_FILTER_NEVER));
 
 
 } /* End PktUtil_IsFilterTypeValid() */
-
 

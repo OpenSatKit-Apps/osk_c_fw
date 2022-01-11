@@ -3,28 +3,28 @@
 **
 ** Note:
 **   1. This code was originally acquired from the NASA cFS External Code
-**      Interface (ECI) NOSA release. Several cosmetic hangs have been made
+**      Interface (ECI) NOSA release. Several cosmetic changes have been made
 **      but it remains functionally very similar.
 **   2. This code must be reentrant and no global data can be used. 
 **   3. There are several (uint16) casts that are required to prevent compiler
 **      warnings most are due to the compiler assuming a signed integer result
 **      for integer-based math operations.
 **
-** License:
-**
-**   Copyright © 2007-2014 United States Government as represented by the 
-**   Administrator of the National Aeronautics and Space Administration. 
-**   All Other Rights Reserved.  
-**
-**   This software was created at NASA's Goddard Space Flight Center.
-**   This software is governed by the NASA Open Source Agreement and may be 
-**   used, distributed and modified only pursuant to the terms of that 
-**   agreement.
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 /*
@@ -34,14 +34,14 @@
 #include "staterep.h"
 
 
-/*
-** Macro Definitions
-*/
+/***********************/
+/** Macro Definitions **/
+/***********************/
 
 
-/*
-** Type Definitions
-*/
+/**********************/
+/** Type Definitions **/
+/**********************/
 
 typedef struct
 {
@@ -49,22 +49,18 @@ typedef struct
    uint16  WordIndex;
    uint16  Mask;
 
-} StateRepBitStruct;
+} StateRepBitStruct_t;
 
 
-/* 
-** File Function Prototypes
-*/
+/*******************************/
+/** Local Function Prototypes **/
+/*******************************/
 
-static boolean GetIdBit(STATEREP_Class*    StateRep,
-                        const char*        CallerStr,
-                        uint16             Id,
-                        StateRepBitStruct* StateRepBit);
+static boolean GetIdBit(STATEREP_Class_t*    StateRep,
+                        const char*          CallerStr,
+                        uint16               Id,
+                        StateRepBitStruct_t* StateRepBit);
                          
-/*
-** Function definitions
-*/
-
 
 /******************************************************************************
 ** Function: STATEREP_Constructor
@@ -72,8 +68,8 @@ static boolean GetIdBit(STATEREP_Class*    StateRep,
 ** Notes:
 **    None
 */
-void STATEREP_Constructor(STATEREP_Class*  StateRep, 
-                          uint16           IdCnt)
+void STATEREP_Constructor(STATEREP_Class_t*  StateRep, 
+                          uint16             IdCnt)
 {
 
    uint16 RemBitCnt, i;
@@ -83,13 +79,14 @@ void STATEREP_Constructor(STATEREP_Class*  StateRep,
    ** clears their latch flags.
    */
    
-   CFE_PSP_MemSet(StateRep,0,sizeof(STATEREP_Class));
+   CFE_PSP_MemSet(StateRep,0,sizeof(STATEREP_Class_t));
 
    StateRep->BitConfig.IdLimit = IdCnt;
    StateRep->BitConfig.BitfieldWords = (uint16)(IdCnt / STATEREP_BITS_PER_WORD);
    
    RemBitCnt = (uint16)(IdCnt % STATEREP_BITS_PER_WORD);
-   for (i=0; i < RemBitCnt; i++) {
+   for (i=0; i < RemBitCnt; i++)
+   {
       
       StateRep->BitConfig.BitfieldRemMask |= 1 << i;
    }
@@ -110,17 +107,19 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
                              const CFE_SB_MsgPtr_t MsgPtr)      /* Pointer to STATEREP_ClearBitCmd struct      */
 {
 
-   STATEREP_Class* StateRep = (STATEREP_Class*)ObjDataPtr;
-   STATEREP_ClearBitCmdMsg* ClearBitCmd = (STATEREP_ClearBitCmdMsg*)MsgPtr;
+   STATEREP_Class_t*          StateRep    = (STATEREP_Class_t*)ObjDataPtr;
+   STATEREP_ClearBitCmdMsg_t* ClearBitCmd = (STATEREP_ClearBitCmdMsg_t*)MsgPtr;
 
-   boolean            RetStatus = TRUE;
-   StateRepBitStruct  StateRepBit;
+   boolean              RetStatus = TRUE;
+   StateRepBitStruct_t  StateRepBit;
 
-   if (ClearBitCmd->Id == STATEREP_SELECT_ALL) {
+   if (ClearBitCmd->Id == STATEREP_SELECT_ALL)
+   {
 
       CFE_PSP_MemSet(&(StateRep->BitConfig.Latched),0,sizeof(StateRep->BitConfig.Latched));
 
-      for (StateRepBit.WordIndex=0; StateRepBit.WordIndex < STATEREP_BITFIELD_WORDS; StateRepBit.WordIndex++) {
+      for (StateRepBit.WordIndex=0; StateRepBit.WordIndex < STATEREP_BITFIELD_WORDS; StateRepBit.WordIndex++)
+      {
 
          StateRep->CurrBits.Word[StateRepBit.WordIndex]    = 0;
          StateRep->TlmMsg.Bits.Word[StateRepBit.WordIndex] = 0;
@@ -129,12 +128,14 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
 
    } /* End if select all */
 
-   else {
+   else
+   {
 
       RetStatus = GetIdBit(StateRep, "State Reporter Rejected Clear Bit Cmd: ",
                            ClearBitCmd->Id, &StateRepBit);
       
-      if (RetStatus == TRUE) {
+      if (RetStatus == TRUE)
+      {
 
          StateRepBit.Mask = (uint16)~StateRepBit.Mask;
 
@@ -165,18 +166,21 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
 
 {
 
-   STATEREP_Class* StateRep = (STATEREP_Class*)ObjDataPtr;
-   STATEREP_ConfigBitCmdMsg*  ConfigBitCmd = (STATEREP_ConfigBitCmdMsg*)MsgPtr;
+   STATEREP_Class_t*            StateRep     = (STATEREP_Class_t*)ObjDataPtr;
+   STATEREP_ConfigBitCmdMsg_t*  ConfigBitCmd = (STATEREP_ConfigBitCmdMsg_t*)MsgPtr;
 
    boolean  RetStatus = TRUE;
 
-   StateRepBitStruct  StateRepBit;
+   StateRepBitStruct_t  StateRepBit;
 
-   if (ConfigBitCmd->Enable == TRUE || ConfigBitCmd->Enable == FALSE) {
+   if (ConfigBitCmd->Enable == TRUE || ConfigBitCmd->Enable == FALSE)
+   {
 
-      if (ConfigBitCmd->Id == STATEREP_SELECT_ALL) {
+      if (ConfigBitCmd->Id == STATEREP_SELECT_ALL)
+      {
          
-         if (ConfigBitCmd->Enable) {
+         if (ConfigBitCmd->Enable)
+         {
             
             for (StateRepBit.WordIndex=0; StateRepBit.WordIndex < StateRep->BitConfig.BitfieldWords; StateRepBit.WordIndex++)
                StateRep->BitConfig.Enabled[StateRepBit.WordIndex] = 0xFFFF;
@@ -185,19 +189,22 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
                StateRep->BitConfig.Enabled[StateRep->BitConfig.BitfieldWords] = StateRep->BitConfig.BitfieldRemMask;
 
          }
-         else {
+         else
+         {
             
             CFE_PSP_MemSet(&(StateRep->BitConfig.Enabled),0,sizeof(StateRep->BitConfig.Enabled));
          
          }         
       } /* End if select all */
       
-      else {
+      else
+      {
          
          RetStatus = GetIdBit(StateRep, "State Reporter Reject Config Bit Cmd:",
                               ConfigBitCmd->Id, &StateRepBit);
          
-         if (RetStatus == TRUE) {
+         if (RetStatus == TRUE)
+         {
             
             if (ConfigBitCmd->Enable)
                StateRep->BitConfig.Enabled[StateRepBit.WordIndex] |= StateRepBit.Mask;
@@ -209,7 +216,8 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
          
       } /* End if individual ID */
    } /* End if valid boolean range */
-   else {
+   else
+   {
 
       CFE_EVS_SendEvent (STATEREP_CONFIG_CMD_ERR_EID, CFE_EVS_ERROR,
                          "State Reporter Reject Config Bit Cmd: Invalid enable value %d",
@@ -233,8 +241,8 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
 **    1. Logic assumes STATEREP_REPORT_MODE has two states.
 **
 */
-void STATEREP_GenTlmMsg(STATEREP_Class*  StateRep,
-                        STATEREP_TlmMsg* StateRepMsg)
+void STATEREP_GenTlmMsg(STATEREP_Class_t*  StateRep,
+                        STATEREP_TlmMsg_t* StateRepMsg)
 {
 
    uint16  i;
@@ -245,19 +253,21 @@ void STATEREP_GenTlmMsg(STATEREP_Class*  StateRep,
    ** - Clear CurrBits for the next execution cycle
    */
 
-   if (StateRep->TlmMode == STATEREP_MERGE_REPORT) {
+   if (StateRep->TlmMode == STATEREP_MERGE_REPORT)
+   {
 
       for (i=0; i < STATEREP_BITFIELD_WORDS; i++)
          StateRepMsg->Bits.Word[i] |= StateRep->CurrBits.Word[i];
 
    } /* End if STATEREP_MERGE_REPORT */
-   else {
+   else
+   {
 
-      CFE_PSP_MemCpy(&(StateRepMsg->Bits),&(StateRep->CurrBits),sizeof(STATEREP_Bits));
+      CFE_PSP_MemCpy(&(StateRepMsg->Bits),&(StateRep->CurrBits),sizeof(STATEREP_Bits_t));
 
    } /* End if STATEREP_NEW_REPORT */
 
-   CFE_PSP_MemSet(&(StateRep->CurrBits),0,sizeof(STATEREP_Bits));
+   CFE_PSP_MemSet(&(StateRep->CurrBits),0,sizeof(STATEREP_Bits_t));
 
 
 } /* End STATEREP_GenTlmMsg() */
@@ -271,20 +281,22 @@ void STATEREP_GenTlmMsg(STATEREP_Class*  StateRep,
 **       return status is provided because the caller always expects the call
 **       to be successful.
 */
-void STATEREP_SetBit(STATEREP_Class*  StateRep,
-                             uint16   Id)
+void STATEREP_SetBit(STATEREP_Class_t*  StateRep,
+                             uint16     Id)
 {
 
-   boolean            ValidId;
-   StateRepBitStruct  StateRepBit;
+   boolean              ValidId;
+   StateRepBitStruct_t  StateRepBit;
 
       
    ValidId = GetIdBit(StateRep, "State Reporter Rejected Set Bit Call:",
                       Id, &StateRepBit);
       
-   if (ValidId == TRUE) {
+   if (ValidId == TRUE)
+   {
 
-      if (StateRep->BitConfig.Enabled[StateRepBit.WordIndex] & StateRepBit.Mask) {
+      if (StateRep->BitConfig.Enabled[StateRepBit.WordIndex] & StateRepBit.Mask)
+      {
          
          StateRep->BitConfig.Latched[StateRepBit.WordIndex] |= StateRepBit.Mask;
             
@@ -305,8 +317,8 @@ void STATEREP_SetBit(STATEREP_Class*  StateRep,
 **    None
 **
 */
-void STATEREP_SetTlmMode(STATEREP_Class*   StateRep,
-                         STATEREP_TlmMode  TlmMode)
+void STATEREP_SetTlmMode(STATEREP_Class_t*   StateRep,
+                         STATEREP_TlmMode_t  TlmMode)
 {
 
    StateRep->TlmMode = TlmMode;
@@ -318,10 +330,11 @@ void STATEREP_SetTlmMode(STATEREP_Class*   StateRep,
 ** Function: STATEREP_TlmModeStr
 **
 */
-const char* STATEREP_TlmModeStr(STATEREP_TlmMode  TlmMode)
+const char* STATEREP_TlmModeStr(STATEREP_TlmMode_t  TlmMode)
 {
 
-   static const char* TlmModeStr[] = {
+   static const char* TlmModeStr[] =
+   {
       "Undefined", 
       "New Report",     /* STATEREP_NEW_REPORT   */
       "Merge Report"    /* STATEREP_MERGE_REPORT */
@@ -330,7 +343,8 @@ const char* STATEREP_TlmModeStr(STATEREP_TlmMode  TlmMode)
    uint8 i = 0;
    
    if ( TlmMode == STATEREP_NEW_REPORT ||
-        TlmMode == STATEREP_MERGE_REPORT) {
+        TlmMode == STATEREP_MERGE_REPORT)
+   {
    
       i = TlmMode;
    
@@ -348,22 +362,24 @@ const char* STATEREP_TlmModeStr(STATEREP_TlmMode  TlmMode)
 **    1. If the ID is invalid (too big) then an event message is sent.
 **
 */
-static boolean GetIdBit(STATEREP_Class*    StateRep,
-                        const char*        CallerStr,
-                        uint16             Id,
-                        StateRepBitStruct* StateRepBit)                        
+static boolean GetIdBit(STATEREP_Class_t*    StateRep,
+                        const char*          CallerStr,
+                        uint16               Id,
+                        StateRepBitStruct_t* StateRepBit)                        
 {
 
    boolean  RetStatus = TRUE;
 
 
-   if (Id < StateRep->BitConfig.IdLimit) {
+   if (Id < StateRep->BitConfig.IdLimit)
+   {
    
       StateRepBit->WordIndex = (uint16)(Id/STATEREP_BITS_PER_WORD);
       StateRepBit->Mask = (uint16)(1 << (uint16)(Id % STATEREP_BITS_PER_WORD));
    
    }
-   else {
+   else
+   {
 
       RetStatus = FALSE;
       CFE_EVS_SendEvent (STATEREP_INVALID_ID_EID, CFE_EVS_ERROR,

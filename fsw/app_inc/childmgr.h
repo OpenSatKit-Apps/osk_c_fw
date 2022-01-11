@@ -17,14 +17,21 @@
 **        try to solve every conceivable scenario. These callbacks can serve
 **        as starting points for developers to create their own functions.
 **
-** License:
-**   Written by David McComas, licensed under the copyleft GNU General Public
-**   License (GPL). 
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 #ifndef _childmgr_
@@ -71,26 +78,29 @@
 ** Initialization Structure
 */
 
-typedef struct {
+typedef struct
+{
    
    const char* TaskName;
    uint32 StackSize;
    uint32 Priority;
    uint32 PerfId;
    
-} CHILDMGR_TaskInit;
+} CHILDMGR_TaskInit_t;
 
 /*
 ** Command Queue
 */
 
-typedef struct {
+typedef struct
+{
 
    char    Buffer[CHILDMGR_CMD_BUFFER_LEN];
 
-} CHILDMGR_CmdQ_Entry;
+} CHILDMGR_CmdQEntry_t;
 
-typedef struct {
+typedef struct
+{
 
    uint32  Mutex;
    uint8   WriteIndex;
@@ -98,12 +108,12 @@ typedef struct {
    uint8   Count;
    uint8   Spare;
    
-   CHILDMGR_CmdQ_Entry  Entry[CHILDMGR_CMD_Q_ENTRIES];
+   CHILDMGR_CmdQEntry_t  Entry[CHILDMGR_CMD_Q_ENTRIES];
 
-} CHILDMGR_CmdQ;
+} CHILDMGR_CmdQ_t;
 
 
-typedef boolean (*CHILDMGR_CmdFuncPtr) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+typedef boolean (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
 
 /*
 ** Objects register their command functions so each command structure
@@ -116,7 +126,7 @@ typedef boolean (*CHILDMGR_CmdFuncPtr) (void* ObjDataPtr, const CFE_SB_MsgPtr_t 
 ** Manage app objects function callback signature 
 */
 struct CHILDMGR_Struct;
-typedef boolean (*CHILDMGR_TaskCallback) (struct CHILDMGR_Struct* ChildMgr);
+typedef boolean (*CHILDMGR_TaskCallback_t) (struct CHILDMGR_Struct* ChildMgr);
 
 
 /*
@@ -132,20 +142,21 @@ typedef struct
    uint16   Valid;    /* Number of valid messages received since init or reset */
    uint16   Invalid;  /* Number of invalid messages received since init or reset */
 
-} CHILDMGR_AltCnt;
+} CHILDMGR_AltCnt_t;
 
 
-typedef struct {
+typedef struct
+{
 
-   void*                DataPtr;
-   CHILDMGR_CmdFuncPtr  FuncPtr; 
+   void*                  DataPtr;
+   CHILDMGR_CmdFuncPtr_t  FuncPtr; 
    
-   CHILDMGR_AltCnt      AltCnt;
+   CHILDMGR_AltCnt_t      AltCnt;
 
-} CHILDMGR_Cmd;
+} CHILDMGR_Cmd_t;
 
-typedef struct CHILDMGR_Struct {
-
+typedef struct CHILDMGR_Struct
+{
 
    int32   RunStatus;
    uint32  PerfId;
@@ -158,13 +169,13 @@ typedef struct CHILDMGR_Struct {
    uint8   CurrCmdCode;
    uint8   PrevCmdCode;
 
-   CHILDMGR_Cmd  Cmd[CHILDMGR_CMD_FUNC_TOTAL];
+   CHILDMGR_Cmd_t  Cmd[CHILDMGR_CMD_FUNC_TOTAL];
 
-   CHILDMGR_CmdQ CmdQ;
+   CHILDMGR_CmdQ_t CmdQ;
    
-   CHILDMGR_TaskCallback TaskCallback;
+   CHILDMGR_TaskCallback_t TaskCallback;
 
-} CHILDMGR_Class;
+} CHILDMGR_Class_t;
 
 
 /************************/
@@ -183,26 +194,26 @@ typedef struct CHILDMGR_Struct {
 **    3. The AppMainCallback function can be NULL and is only used if the
 **       ChildTaskMainFunc has a callback feature.
 */
-int32 CHILDMGR_Constructor(CHILDMGR_Class* ChildMgr,
+int32 CHILDMGR_Constructor(CHILDMGR_Class_t* ChildMgr,
                            CFE_ES_ChildTaskMainFuncPtr_t ChildTaskMainFunc,
-                           CHILDMGR_TaskCallback AppMainCallback,
-                           CHILDMGR_TaskInit* TaskInit);
+                           CHILDMGR_TaskCallback_t AppMainCallback,
+                           CHILDMGR_TaskInit_t* TaskInit);
 
 
 /******************************************************************************
 ** Function: CHILDMGR_RegisterFunc
 **
 */
-boolean CHILDMGR_RegisterFunc(CHILDMGR_Class* ChildMgr,
+boolean CHILDMGR_RegisterFunc(CHILDMGR_Class_t* ChildMgr,
                               uint16 FuncCode, void* ObjDataPtr,
-                              CHILDMGR_CmdFuncPtr ObjFuncPtr);
+                              CHILDMGR_CmdFuncPtr_t ObjFuncPtr);
 
             
 /******************************************************************************
 ** Function: CHILDMGR_ResetStatus
 **
 */
-void CHILDMGR_ResetStatus(CHILDMGR_Class* ChildMgr);
+void CHILDMGR_ResetStatus(CHILDMGR_Class_t* ChildMgr);
 
 
 /******************************************************************************

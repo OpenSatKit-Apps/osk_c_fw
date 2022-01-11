@@ -4,14 +4,21 @@
 ** Notes:
 **   1. This code must be reentrant and no global data can be used. 
 **
-** License:
-**   Written by David McComas, licensed under the copyleft GNU
-**   General Public License (GPL). 
-**
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
 **   2. cFS Application Developer's Guide.
 **
+**   Written by David McComas, licensed under the Apache License, Version 2.0
+**   (the "License"); you may not use this file except in compliance with the
+**   License. You may obtain a copy of the License at
+**
+**      http://www.apache.org/licenses/LICENSE-2.0
+**
+**   Unless required by applicable law or agreed to in writing, software
+**   distributed under the License is distributed on an "AS IS" BASIS,
+**   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+**   See the License for the specific language governing permissions and
+**   limitations under the License.
 */
 
 /*
@@ -20,18 +27,18 @@
 
 #include <string.h>
 #include "cfe.h"
-#include "tblmgr_msg.h"
 #include "fileutil.h"
 #include "tblmgr.h"
 
 ///#define DBG_TBLMGR
 
-/*
-** File Function Prototypes
-*/
+/*******************************/
+/** Local Function Prototypes **/
+/*******************************/
 
-static boolean LoadTblStub(TBLMGR_Tbl *Tbl, uint8 LoadType, const char* Filename);
-static boolean DumpTblStub(TBLMGR_Tbl *Tbl, uint8 DumpType, const char* Filename);
+static boolean LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename);
+static boolean DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename);
+
 
 /******************************************************************************
 ** Function: TBLMGR_Constructor
@@ -41,12 +48,12 @@ static boolean DumpTblStub(TBLMGR_Tbl *Tbl, uint8 DumpType, const char* Filename
 **       called using the same tblmgr instance.
 **
 */
-void TBLMGR_Constructor(TBLMGR_Class* TblMgr)
+void TBLMGR_Constructor(TBLMGR_Class_t* TblMgr)
 {
 
    int i;
 
-   CFE_PSP_MemSet(TblMgr, 0, sizeof(TBLMGR_Class));
+   CFE_PSP_MemSet(TblMgr, 0, sizeof(TBLMGR_Class_t));
    for (i=0; i < TBLMGR_MAX_TBL_PER_APP; i++)
    {
       TblMgr->Tbl[i].LoadFuncPtr = LoadTblStub;
@@ -61,11 +68,11 @@ void TBLMGR_Constructor(TBLMGR_Class* TblMgr)
 ** Register a table without loading a default table.
 ** Returns table ID.
 */
-uint8 TBLMGR_RegisterTbl(TBLMGR_Class* TblMgr, TBLMGR_LoadTblFuncPtr LoadFuncPtr, 
-                         TBLMGR_DumpTblFuncPtr DumpFuncPtr)
+uint8 TBLMGR_RegisterTbl(TBLMGR_Class_t* TblMgr, TBLMGR_LoadTblFuncPtr_t LoadFuncPtr, 
+                         TBLMGR_DumpTblFuncPtr_t DumpFuncPtr)
 {
   
-   TBLMGR_Tbl*  NewTbl;
+   TBLMGR_Tbl_t*  NewTbl;
    TblMgr->LastActionTblId = TBLMGR_MAX_TBL_PER_APP;
    
    if (DBG_TBLMGR) OS_printf("TBLMGR_RegisterTbl() Entry\n");
@@ -106,12 +113,12 @@ uint8 TBLMGR_RegisterTbl(TBLMGR_Class* TblMgr, TBLMGR_LoadTblFuncPtr LoadFuncPtr
 ** Register a table and load a default table
 ** Returns table ID.
 */
-uint8 TBLMGR_RegisterTblWithDef(TBLMGR_Class* TblMgr, TBLMGR_LoadTblFuncPtr LoadFuncPtr, 
-                                TBLMGR_DumpTblFuncPtr DumpFuncPtr, const char* TblFilename)
+uint8 TBLMGR_RegisterTblWithDef(TBLMGR_Class_t* TblMgr, TBLMGR_LoadTblFuncPtr_t LoadFuncPtr, 
+                                TBLMGR_DumpTblFuncPtr_t DumpFuncPtr, const char* TblFilename)
 {
 
    uint8 TblId = TBLMGR_RegisterTbl(TblMgr, LoadFuncPtr, DumpFuncPtr);
-   TBLMGR_LoadTblCmdMsg LoadTblCmd;
+   TBLMGR_LoadTblCmdMsg_t LoadTblCmd;
 
    if (DBG_TBLMGR) OS_printf("TBLMGR_RegisterTblWithDef() Entry\n");
 
@@ -137,7 +144,7 @@ uint8 TBLMGR_RegisterTblWithDef(TBLMGR_Class* TblMgr, TBLMGR_LoadTblFuncPtr Load
 ** Function: TBLMGR_ResetStatus
 **
 */
-void TBLMGR_ResetStatus(TBLMGR_Class* TblMgr)
+void TBLMGR_ResetStatus(TBLMGR_Class_t* TblMgr)
 {
 
    /* Nothing to do - Preserve status of most recent action */ 
@@ -151,17 +158,18 @@ void TBLMGR_ResetStatus(TBLMGR_Class* TblMgr)
 ** Returns a pointer to the table status structure for the table that the
 ** last action was performed upon.
 */
-const TBLMGR_Tbl* TBLMGR_GetLastTblStatus(TBLMGR_Class* TblMgr)
+const TBLMGR_Tbl_t* TBLMGR_GetLastTblStatus(TBLMGR_Class_t* TblMgr)
 {
 
    if (TblMgr->LastActionTblId < TBLMGR_MAX_TBL_PER_APP)
-      
+   {
       return &(TblMgr->Tbl[TblMgr->LastActionTblId]);
-   
+   }
    else
-
+   {
       return NULL;
-      
+   }
+   
 } /* End TBLMGR_GetLastTblStatus() */
 
 
@@ -170,17 +178,18 @@ const TBLMGR_Tbl* TBLMGR_GetLastTblStatus(TBLMGR_Class* TblMgr)
 **
 ** Returns a pointer to the table status for TblId.
 */
-const TBLMGR_Tbl* TBLMGR_GetTblStatus(TBLMGR_Class* TblMgr, uint8 TblId)
+const TBLMGR_Tbl_t* TBLMGR_GetTblStatus(TBLMGR_Class_t* TblMgr, uint8 TblId)
 {
 
    if (TblId < TBLMGR_MAX_TBL_PER_APP)
-      
+   {
       return &(TblMgr->Tbl[TblId]);
-   
+   }
    else
-
+   {
       return NULL;
-      
+   }
+   
 } /* End TBLMGR_GetTblStatus() */
 
 
@@ -188,7 +197,7 @@ const TBLMGR_Tbl* TBLMGR_GetTblStatus(TBLMGR_Class* TblMgr, uint8 TblId)
 ** Function: TBLMGR_LoadTblCmd
 **
 ** Note:
-**  1. This function must comply with the CMDMGR_CmdFuncPtr definition
+**  1. This function must comply with the CMDMGR_CmdFuncPtr_t definition
 **  2. It calls the TBLMGR_LoadTblFuncPtr function that the user provided
 **     during registration
 ** 
@@ -197,9 +206,9 @@ boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
 {
 
    boolean RetStatus = FALSE;
-   TBLMGR_Tbl   *Tbl;
-   TBLMGR_Class *TblMgr = (TBLMGR_Class *) ObjDataPtr;
-   const  TBLMGR_LoadTblCmdMsg *LoadTblCmd = (const TBLMGR_LoadTblCmdMsg *) MsgPtr;
+   TBLMGR_Tbl_t*   Tbl;
+   TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
+   const  TBLMGR_LoadTblCmdMsg_t* LoadTblCmd = (const TBLMGR_LoadTblCmdMsg_t *) MsgPtr;
 
    if (DBG_TBLMGR) OS_printf("TBLMGR_LoadTblCmd() Entry\n");
 
@@ -216,7 +225,8 @@ boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
          if (DBG_TBLMGR) OS_printf("TBLMGR_LoadTblCmd() Before Tbl->LoadFuncPtr call\n");
          Tbl = &(TblMgr->Tbl[LoadTblCmd->Id]);
          RetStatus = (Tbl->LoadFuncPtr) (Tbl, LoadTblCmd->LoadType, LoadTblCmd->Filename);
-         if (RetStatus) {
+         if (RetStatus)
+         {
             TblMgr->Tbl[LoadTblCmd->Id].LastActionStatus = TBLMGR_STATUS_VALID;
             CFE_EVS_SendEvent(TBLMGR_LOAD_SUCCESS_EID, CFE_EVS_INFORMATION, 
                               "Successfully %sd table %d using file %s",
@@ -244,7 +254,8 @@ boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
 const char* TBLMGR_LoadTypeStr(int8 LoadType)
 {
 
-   static const char* LoadTypeStr[] = {
+   static const char* LoadTypeStr[] =
+   {
       "replace",
       "update",
       "undefined" 
@@ -253,7 +264,8 @@ const char* TBLMGR_LoadTypeStr(int8 LoadType)
    uint8 i = 2;
    
    if ( LoadType == TBLMGR_LOAD_TBL_REPLACE ||
-        LoadType == TBLMGR_LOAD_TBL_UPDATE) {
+        LoadType == TBLMGR_LOAD_TBL_UPDATE)
+   {
    
       i = LoadType;
    
@@ -268,7 +280,7 @@ const char* TBLMGR_LoadTypeStr(int8 LoadType)
 ** Function: TBLMGR_DumpTblCmd
 **
 ** Note:
-**  1. This function must comply with the CMDMGR_CmdFuncPtr definition
+**  1. This function must comply with the CMDMGR_CmdFuncPtr_t definition
 **  2. It calls the TBLMGR_DumpTblFuncPtr function that the user provided
 **     during registration 
 ** 
@@ -277,9 +289,9 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
 {
 
    boolean RetStatus = FALSE;
-   TBLMGR_Tbl   *Tbl;
-   TBLMGR_Class *TblMgr = (TBLMGR_Class *) ObjDataPtr;
-   const  TBLMGR_DumpTblCmdMsg *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg *) MsgPtr;
+   TBLMGR_Tbl_t*   Tbl;
+   TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
+   const  TBLMGR_DumpTblCmdMsg_t *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg_t *) MsgPtr;
       
    if (DumpTblCmd->Id < TblMgr->NextAvailableId)
    {
@@ -290,7 +302,8 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
       {
          Tbl = &TblMgr->Tbl[DumpTblCmd->Id];
          RetStatus = (Tbl->DumpFuncPtr) (Tbl, DumpTblCmd->DumpType, DumpTblCmd->Filename);
-         if (RetStatus) {
+         if (RetStatus)
+         {
             TblMgr->Tbl[DumpTblCmd->Id].LastActionStatus = TBLMGR_STATUS_VALID;
             CFE_EVS_SendEvent(TBLMGR_DUMP_SUCCESS_EID, CFE_EVS_INFORMATION, 
                               "Successfully dumped table %d to file %s",
@@ -308,13 +321,14 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
   
 } /* End TBLMGR_DumpTblCmd() */
 
+
 /******************************************************************************
 ** Function: LoadTblStub 
 **
 ** Notes:
 **  1. Must used the TBLMGR_TblLoadFuncPtr function definition
 */
-static boolean LoadTblStub(TBLMGR_Tbl *Tbl, uint8 LoadType, const char* Filename)
+static boolean LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename)
 {
 
    CFE_EVS_SendEvent (TBLMGR_LOAD_STUB_ERR_EID, CFE_EVS_ERROR,
@@ -325,20 +339,20 @@ static boolean LoadTblStub(TBLMGR_Tbl *Tbl, uint8 LoadType, const char* Filename
 
 } /* End LoadTblStub() */
 
+
 /******************************************************************************
 ** Function: DumpTblStub 
 **
 ** Notes:
 **  1. Must used the TBLMGR_TblDumpFuncPtr function definition
 */
-static boolean DumpTblStub(TBLMGR_Tbl *Tbl, uint8 DumpType, const char* Filename)
+static boolean DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename)
 {
 
-   CFE_EVS_SendEvent (TBLMGR_DUMP_STUB_ERR_EID, CFE_EVS_ERROR,
-                      "Application did not define a dump table function for table %d",
-                      Tbl->Id);
+   CFE_EVS_SendEvent(TBLMGR_DUMP_STUB_ERR_EID, CFE_EVS_ERROR,
+                     "Application did not define a dump table function for table %d",
+                     Tbl->Id);
 
    return FALSE;
 
 } /* End DumpTblStub() */
-
