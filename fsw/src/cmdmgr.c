@@ -27,14 +27,30 @@
 
 #include "cmdmgr.h"
 
+
+/***********************/
+/** Macro Definitions **/
+/***********************/
+
 ///#define DBG_CMDMGR
 
 
-/*
-** File Function Prototypes
-*/
+/**********************/
+/** Global File Data **/
+/**********************/
 
-static boolean UnusedFuncCode(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+static const char* BoolStr[] = {
+   "FALSE",
+   "TRUE",
+   "UNDEF"
+};
+
+
+/******************************/
+/** File Function Prototypes **/
+/******************************/
+
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 
 
 /******************************************************************************
@@ -65,11 +81,11 @@ void CMDMGR_Constructor(CMDMGR_Class_t* CmdMgr)
 ** Function: CMDMGR_RegisterFunc
 **
 */
-boolean CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
-                            CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen)
+bool CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
+                         CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen)
 {
 
-   boolean RetStatus = FALSE;
+   bool    RetStatus = false;
    
    if (FuncCode < CMDMGR_CMD_FUNC_TOTAL)
    {
@@ -79,17 +95,17 @@ boolean CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDa
       CmdMgr->Cmd[FuncCode].FuncPtr = ObjFuncPtr;
       CmdMgr->Cmd[FuncCode].UserDataLen = UserDataLen;
 
-      CmdMgr->Cmd[FuncCode].AltCnt.Enabled = FALSE;
+      CmdMgr->Cmd[FuncCode].AltCnt.Enabled = false;
       CmdMgr->Cmd[FuncCode].AltCnt.Valid   = 0;
       CmdMgr->Cmd[FuncCode].AltCnt.Invalid = 0;
       
-      RetStatus = TRUE;
+      RetStatus = true;
 
    }
    else
    {
       
-      CFE_EVS_SendEvent (CMDMGR_REG_INVALID_FUNC_CODE_ERR_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent (CMDMGR_REG_INVALID_FUNC_CODE_ERR_EID, CFE_EVS_EventType_ERROR,
          "Attempt to register function code %d which is greater than max %d",
          FuncCode,(CMDMGR_CMD_FUNC_TOTAL-1));
    }
@@ -103,18 +119,18 @@ boolean CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDa
 ** Function: CMDMGR_RegisterFuncAltCnt
 **
 */
-boolean CMDMGR_RegisterFuncAltCnt(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
-                                  CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen)
+bool CMDMGR_RegisterFuncAltCnt(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
+                               CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen)
 {
 
-   boolean RetStatus = FALSE;
+   bool    RetStatus = false;
 
    if (CMDMGR_RegisterFunc(CmdMgr, FuncCode, ObjDataPtr, ObjFuncPtr, UserDataLen))
    {
       
-      CmdMgr->Cmd[FuncCode].AltCnt.Enabled = TRUE;      
+      CmdMgr->Cmd[FuncCode].AltCnt.Enabled = true;      
 
-      RetStatus = TRUE;
+      RetStatus = true;
 
    }
 
@@ -158,17 +174,23 @@ void CMDMGR_ResetStatus(CMDMGR_Class_t* CmdMgr)
 **      if an app wants a message response then it should publish the format. 
 **
 */
-boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPtr)
+bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_Buffer_t* SbBufPtr)
 {
 
-   boolean  ValidCmd = FALSE;
+   bool   ValidCmd = false;
+   bool   ChecksumValid;
+   size_t UserDataLen; 
+   CFE_MSG_FcnCode_t FuncCode;
 
-   uint16 UserDataLen = CFE_SB_GetUserDataLength(MsgPtr);
-   uint16 FuncCode    = CFE_SB_GetCmdCode(MsgPtr);
-   uint32 Checksum    = CFE_SB_GetChecksum(MsgPtr);
+   UserDataLen = CFE_SB_GetUserDataLength(&SbBufPtr->Msg);
 
-   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [0]=0x%X, [0]=0x%X, [0]=0x%X, [0]=0x%X\n",
-                             ((uint16*)MsgPtr)[0],((uint16*)MsgPtr)[1],((uint16*)MsgPtr)[2],((uint16*)MsgPtr)[3]);
+   CFE_MSG_GetFcnCode(&SbBufPtr->Msg, &FuncCode);
+   CFE_MSG_ValidateChecksum(&SbBufPtr->Msg, &ChecksumValid);
+   
+   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [0]=0x%X, [1]=0x%X, [2]=0x%X, [3]=0x%X\n",
+                             ((uint8*)SbBufPtr)[0],((uint8*)SbBufPtr)[1],((uint8*)SbBufPtr)[2],((uint8*)SbBufPtr)[3]);
+   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [4]=0x%X, [5]=0x%X, [6]=0x%X, [7]=0x%X\n",
+                             ((uint8*)SbBufPtr)[4],((uint8*)SbBufPtr)[5],((uint8*)SbBufPtr)[6],((uint8*)SbBufPtr)[7]);
    if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): FuncCode %d, DataLen %d\n", FuncCode,UserDataLen);
 
    if (FuncCode < CMDMGR_CMD_FUNC_TOTAL)
@@ -177,24 +199,24 @@ boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPt
       if (UserDataLen == CmdMgr->Cmd[FuncCode].UserDataLen)
       {
 
-         if (CFE_SB_ValidateChecksum(MsgPtr) == TRUE)
+         if (ChecksumValid)
          {
 
-            ValidCmd = (CmdMgr->Cmd[FuncCode].FuncPtr)(CmdMgr->Cmd[FuncCode].DataPtr, MsgPtr);
+            ValidCmd = (CmdMgr->Cmd[FuncCode].FuncPtr)(CmdMgr->Cmd[FuncCode].DataPtr, SbBufPtr);
 
          } /* End if valid checksum */
          else
          {
 
-            CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_CHECKSUM_ERR_EID, CFE_EVS_ERROR,
-                               "Invalid command checksum %d", Checksum);
+            CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_CHECKSUM_ERR_EID, CFE_EVS_EventType_ERROR,
+                               "Invalid command checksum");
          
          }
       } /* End if valid length */
       else
       {
 
-         CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_LEN_ERR_EID, CFE_EVS_ERROR,
+         CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
                             "Invalid command user data length %d, expected %d",
                             UserDataLen, CmdMgr->Cmd[FuncCode].UserDataLen);
 
@@ -204,7 +226,7 @@ boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPt
    else
    {
       
-      CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_FUNC_CODE_ERR_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_FUNC_CODE_ERR_EID, CFE_EVS_EventType_ERROR,
                          "Invalid command function code %d is greater than max %d",
                          FuncCode, (CMDMGR_CMD_FUNC_TOTAL-1));
 
@@ -232,13 +254,16 @@ boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPt
 ** Function: UnusedFuncCode
 **
 */
-static boolean UnusedFuncCode(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
 {
 
-   CFE_EVS_SendEvent (CMDMGR_DISPATCH_UNUSED_FUNC_CODE_ERR_EID, CFE_EVS_ERROR,
-                      "Unused command function code %d received",CFE_SB_GetCmdCode(MsgPtr));
+   CFE_MSG_FcnCode_t FuncCode;
+   
+   CFE_MSG_GetFcnCode(&SbBufPtr->Msg, &FuncCode);
+   CFE_EVS_SendEvent (CMDMGR_DISPATCH_UNUSED_FUNC_CODE_ERR_EID, CFE_EVS_EventType_ERROR,
+                      "Unused command function code %d received",FuncCode);
 
-   return FALSE;
+   return false;
 
 } /* End UnusedFuncCode() */
 
@@ -247,10 +272,10 @@ static boolean UnusedFuncCode(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
 ** Function: CMDMGR_ValidBoolArg
 **
 */
-boolean CMDMGR_ValidBoolArg(uint16 BoolArg)
+bool CMDMGR_ValidBoolArg(uint16 BoolArg)
 {
    
-   return ((BoolArg == TRUE) || (BoolArg == FALSE));
+   return ((BoolArg == true) || (BoolArg == false));
 
 } /* CMDMGR_ValidBoolArg() */
 
@@ -261,22 +286,14 @@ boolean CMDMGR_ValidBoolArg(uint16 BoolArg)
 ** Purpose: Return a pointer to a string describing a boolean
 **
 ** Notes:
-**   Assumes FALSE=0 and TRUE=1
+**   Assumes false=0 and true=1
 */
-const char* CMDMGR_BoolStr(boolean BoolArg)
+const char* CMDMGR_BoolStr(bool BoolArg)
 {
    
-   static const char* BoolStr[] = 
-   {
-      "FALSE",
-      "TRUE",
-      "UNDEF"
-   };
-
    uint8 i = 2;
    
-   if ( BoolArg == TRUE || BoolArg == FALSE)
-   {
+   if ( BoolArg == true || BoolArg == false) {
    
       i = BoolArg;
    

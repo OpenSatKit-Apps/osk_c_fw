@@ -32,6 +32,10 @@
 #include "pktutil.h"
 
 
+/*********************/
+/** Local Functions **/
+/*********************/
+
 /******************************************************************************
 ** Function: PktUtil_IsPacketFiltered
 **
@@ -40,17 +44,17 @@
 **   X = out of every group of this many packets
 **   O = starting at this offset within the group
 */
-boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Filter_t* Filter)
+bool PktUtil_IsPacketFiltered(const CFE_SB_Buffer_t* SbBufPtr, const PktUtil_Filter_t* Filter)
 {        
 
-   boolean PacketIsFiltered = TRUE;
+   bool PacketIsFiltered = true;
    CFE_TIME_SysTime_t PacketTime;
    uint16 FilterValue;
    uint16 Seconds;
    uint16 Subsecs;
 
-   if (Filter->Type == PKTUTIL_FILTER_ALWAYS) return TRUE;
-   if (Filter->Type == PKTUTIL_FILTER_NEVER)  return FALSE;
+   if (Filter->Type == PKTUTIL_FILTER_ALWAYS) return true;
+   if (Filter->Type == PKTUTIL_FILTER_NEVER)  return false;
    
    /* 
    ** Default to packet being filtered so only need to check for valid algorithm
@@ -67,16 +71,16 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
        (Filter->Param.O <  Filter->Param.X))
    {
 
-      if (Filter->Type == PKTUTIL_FILTER_BY_SEQ_CNT)
-      {
+      if (Filter->Type == PKTUTIL_FILTER_BY_SEQ_CNT) {
       
-         FilterValue = CCSDS_RD_SEQ(MsgPtr->Hdr);
-      
+         CFE_MSG_GetSequenceCount(&SbBufPtr->Msg, &SeqCnt);
+         FilterValue = (uint16)SeqCnt; 
+
       }
       else if (Filter->Type == PKTUTIL_FILTER_BY_TIME)
       {
          
-         PacketTime = CFE_SB_GetMsgTime(MsgPtr);  
+         CFE_MSG_GetMsgTime(&SbBufPtr->Msg, &PacketTime);  
    
          Seconds = ((uint16)PacketTime.Seconds) & PKTUTIL_11_LSB_SECONDS_MASK;
 
@@ -96,7 +100,7 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
          if (((FilterValue - Filter->Param.O) % Filter->Param.X) < Filter->Param.N)
          {
 
-            PacketIsFiltered = FALSE;
+            PacketIsFiltered = false;
       
          }
       }
@@ -116,7 +120,7 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MsgPtr, const PktUtil_Fil
 **      packet definitions typically don't use enumerated types so they can 
 **      control the storage size (prior to C++11).
 */
-boolean PktUtil_IsFilterTypeValid(uint16 FilterType)
+bool PktUtil_IsFilterTypeValid(uint16 FilterType)
 {
 
    return ((FilterType >= PKTUTIL_FILTER_ALWAYS) &&

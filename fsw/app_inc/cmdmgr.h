@@ -50,7 +50,7 @@
 /** Type Definitions **/
 /**********************/
 
-typedef boolean (*CMDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+typedef bool (*CMDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 
 /*
 ** Alternate command counters allow an individual command to have its own 
@@ -61,9 +61,9 @@ typedef boolean (*CMDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t 
 typedef struct
 {
 
-   boolean  Enabled;  /* Use alternate cmd counters */            
-   uint16   Valid;    /* Number of valid messages received since init or reset */
-   uint16   Invalid;  /* Number of invalid messages received since init or reset */
+   bool    Enabled;  /* Use alternate cmd counters */            
+   uint16  Valid;    /* Number of valid messages received since init or reset */
+   uint16  Invalid;  /* Number of invalid messages received since init or reset */
 
 } CMDMGR_AltCnt_t;
 
@@ -110,8 +110,8 @@ void CMDMGR_Constructor(CMDMGR_Class_t* CmdMgr);
 ** Function: CMDMGR_RegisterFunc
 **
 */
-boolean CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
-                            CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen);
+bool CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
+                         CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen);
 
 
 /******************************************************************************
@@ -120,8 +120,8 @@ boolean CMDMGR_RegisterFunc(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDa
 ** Register a command function that will increment its own private alternate
 ** command counters.
 */
-boolean CMDMGR_RegisterFuncAltCnt(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
-                                  CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen);
+bool CMDMGR_RegisterFuncAltCnt(CMDMGR_Class_t* CmdMgr, uint16 FuncCode, void* ObjDataPtr, 
+                               CMDMGR_CmdFuncPtr_t ObjFuncPtr, uint16 UserDataLen);
 
 
 /******************************************************************************
@@ -135,7 +135,7 @@ void CMDMGR_ResetStatus(CMDMGR_Class_t* CmdMgr);
 ** Function: CMDMGR_DispatchFunc
 **
 */
-boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPtr);
+bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr,  const CFE_SB_Buffer_t* SbBufPtr);
 
 
 /******************************************************************************
@@ -144,7 +144,7 @@ boolean CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_MsgPtr_t  MsgPt
 ** Use uint16 because commands use both uint8 and uint16 for booleans and test   
 ** is valid for casting to larger storage but not truncating to shorter storage
 */
-boolean CMDMGR_ValidBoolArg(uint16 BoolArg);
+bool CMDMGR_ValidBoolArg(uint16 BoolArg);
 
 
 /******************************************************************************
@@ -155,6 +155,6 @@ boolean CMDMGR_ValidBoolArg(uint16 BoolArg);
 ** Notes:
 **   None
 */
-const char* CMDMGR_BoolStr(boolean  BoolArg);
+const char* CMDMGR_BoolStr(bool BoolArg);
 
 #endif /* _cmdmgr_ */

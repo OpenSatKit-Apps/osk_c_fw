@@ -68,9 +68,9 @@
 #define CHILDMGR_MAX_TASKS  5   /* Max number of child tasks registered for all apps */
 
 
-#define CHILDMGR_CMD_BUFFER_LEN  256   /* Must be greater than largest cmd msg */ 
-#define CHILDMGR_CMD_Q_ENTRIES     3   
-#define CHILDMGR_CMD_FUNC_TOTAL   32
+#define CHILDMGR_CMD_PAYLOAD_LEN  256   /* Must be greater than largest cmd msg */ 
+#define CHILDMGR_CMD_Q_ENTRIES      3   
+#define CHILDMGR_CMD_FUNC_TOTAL    32
 
 /******************************************************************************
 ** State Reporter (STATEREP)

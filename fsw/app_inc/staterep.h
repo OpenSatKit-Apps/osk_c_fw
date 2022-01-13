@@ -243,8 +243,8 @@ void STATEREP_Constructor(STATEREP_Class_t*  StateRep,
 **   FALSE - Command rejected: An event message is issued describing the
 **           cause of the failure.
 */
-boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class */
-                             const CFE_SB_MsgPtr_t MsgPtr);     /* Pointer to STATEREP_ClearBitCmd struct     */
+bool STATEREP_ClearBitCmd(                 void* ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class */
+                          const CFE_SB_Buffer_t* SbBufPtr);   /* Pointer to STATEREP_ClearBitCmd struct     */
                                  
 
 
@@ -266,8 +266,8 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
 **   FALSE - Command rejected: An event message is issued describing the
 **           cause of the failure.
 */
-boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class */
-                              const CFE_SB_MsgPtr_t MsgPtr);     /* Pointer to STATEREP_ConfigBitCmd struct    */
+bool STATEREP_ConfigBitCmd(                void*  ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class */
+                           const CFE_SB_Buffer_t* SbBufPtr);   /* Pointer to STATEREP_ConfigBitCmd struct    */
                                       
 
 /******************************************************************************

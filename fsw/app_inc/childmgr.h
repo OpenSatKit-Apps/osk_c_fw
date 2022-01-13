@@ -95,7 +95,10 @@ typedef struct
 typedef struct
 {
 
-   char    Buffer[CHILDMGR_CMD_BUFFER_LEN];
+   CFE_MSG_CommandHeader_t  CmdHeader;
+   char    Payload[CHILDMGR_CMD_PAYLOAD_LEN];
+   
+} CHILDMGR_CmdQ_Entry;
 
 } CHILDMGR_CmdQEntry_t;
 
@@ -113,7 +116,7 @@ typedef struct
 } CHILDMGR_CmdQ_t;
 
 
-typedef boolean (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+typedef bool (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
 
 /*
 ** Objects register their command functions so each command structure
@@ -126,7 +129,7 @@ typedef boolean (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_
 ** Manage app objects function callback signature 
 */
 struct CHILDMGR_Struct;
-typedef boolean (*CHILDMGR_TaskCallback_t) (struct CHILDMGR_Struct* ChildMgr);
+typedef bool (*CHILDMGR_TaskCallback_t) (struct CHILDMGR_Struct* ChildMgr);
 
 
 /*
@@ -138,7 +141,7 @@ typedef boolean (*CHILDMGR_TaskCallback_t) (struct CHILDMGR_Struct* ChildMgr);
 typedef struct
 {
 
-   boolean  Enabled;  /* Use alternate cmd counters */            
+   bool     Enabled;  /* Use alternate cmd counters */            
    uint16   Valid;    /* Number of valid messages received since init or reset */
    uint16   Invalid;  /* Number of invalid messages received since init or reset */
 
@@ -204,9 +207,9 @@ int32 CHILDMGR_Constructor(CHILDMGR_Class_t* ChildMgr,
 ** Function: CHILDMGR_RegisterFunc
 **
 */
-boolean CHILDMGR_RegisterFunc(CHILDMGR_Class_t* ChildMgr,
-                              uint16 FuncCode, void* ObjDataPtr,
-                              CHILDMGR_CmdFuncPtr_t ObjFuncPtr);
+bool CHILDMGR_RegisterFunc(CHILDMGR_Class_t* ChildMgr,
+                           uint16 FuncCode, void* ObjDataPtr,
+                           CHILDMGR_CmdFuncPtr_t ObjFuncPtr);
 
             
 /******************************************************************************
@@ -223,7 +226,7 @@ void CHILDMGR_ResetStatus(CHILDMGR_Class_t* ChildMgr);
 **   1. This command function is registered with the app's cmdmgr with all of
 **      the function codes that use the child task to process the command.
 */
-boolean CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t  MsgPtr);
+bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 
 
 /******************************************************************************
@@ -235,8 +238,8 @@ boolean CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t  MsgPtr)
 **      periodically suspended to prevent CPU hogging.
 **
 */
-boolean CHILDMGR_PauseTask(uint16* TaskBlockCnt, uint16 TaskBlockLim, 
-                           uint32 TaskBlockDelayMs, uint32 PerfId);
+bool CHILDMGR_PauseTask(uint16* TaskBlockCnt, uint16 TaskBlockLim, 
+                        uint32 TaskBlockDelayMs, uint32 PerfId);
 
 
 /******************************************************************************

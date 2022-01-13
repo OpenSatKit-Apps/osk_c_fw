@@ -85,8 +85,8 @@ typedef struct
 **       "CFG_" parameters defined in app_cfg.h.
 **
 */
-boolean INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniFile,
-                           INILIB_CfgEnum_t* CfgEnum);
+bool INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniFile,
+                        INILIB_CfgEnum_t* CfgEnum);
 
 
 /******************************************************************************

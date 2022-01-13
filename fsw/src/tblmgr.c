@@ -36,8 +36,8 @@
 /** Local Function Prototypes **/
 /*******************************/
 
-static boolean LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename);
-static boolean DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename);
+static bool LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename);
+static bool DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename);
 
 
 /******************************************************************************
@@ -83,7 +83,7 @@ uint8 TBLMGR_RegisterTbl(TBLMGR_Class_t* TblMgr, TBLMGR_LoadTblFuncPtr_t LoadFun
       NewTbl->Id = TblMgr->NextAvailableId;
       NewTbl->LastAction = TBLMGR_ACTION_REGISTER;
       NewTbl->LastActionStatus = TBLMGR_STATUS_VALID;
-      NewTbl->Loaded = FALSE;
+      NewTbl->Loaded = false;
       strcpy(NewTbl->Filename,TBLMGR_UNDEF_STR);
        
       /* Should never have null ptr but just in case leave stub function in place */
@@ -98,7 +98,7 @@ uint8 TBLMGR_RegisterTbl(TBLMGR_Class_t* TblMgr, TBLMGR_LoadTblFuncPtr_t LoadFun
    }
    else
    {
-      CFE_EVS_SendEvent (TBLMGR_REG_EXCEEDED_MAX_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent (TBLMGR_REG_EXCEEDED_MAX_EID, CFE_EVS_EventType_ERROR,
       "Attempt to register a table that would have exceeded the max %d tables defined for the app",
       TBLMGR_MAX_TBL_PER_APP);
    }
@@ -131,7 +131,7 @@ uint8 TBLMGR_RegisterTblWithDef(TBLMGR_Class_t* TblMgr, TBLMGR_LoadTblFuncPtr_t 
       LoadTblCmd.Id = TblId;
       LoadTblCmd.LoadType = TBLMGR_LOAD_TBL_REPLACE;
       strncpy (LoadTblCmd.Filename,TblFilename,OS_MAX_PATH_LEN);
-      TBLMGR_LoadTblCmd(TblMgr, (CFE_SB_MsgPtr_t)&LoadTblCmd);
+      TBLMGR_LoadTblCmd(TblMgr, (void *)&LoadTblCmd);  //TODO - cfe7.0 (CFE_SB_Buffer_t*)
       
    } /* End if TblId valid */
    
@@ -202,13 +202,13 @@ const TBLMGR_Tbl_t* TBLMGR_GetTblStatus(TBLMGR_Class_t* TblMgr, uint8 TblId)
 **     during registration
 ** 
 */
-boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
+boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
 {
 
    boolean RetStatus = FALSE;
    TBLMGR_Tbl_t*   Tbl;
    TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
-   const  TBLMGR_LoadTblCmdMsg_t* LoadTblCmd = (const TBLMGR_LoadTblCmdMsg_t *) MsgPtr;
+   const  TBLMGR_LoadTblCmdMsg_t* LoadTblCmd = (const TBLMGR_LoadTblCmdMsg_t *) SbBufPtr;
 
    if (DBG_TBLMGR) OS_printf("TBLMGR_LoadTblCmd() Entry\n");
 
@@ -228,16 +228,16 @@ boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
          if (RetStatus)
          {
             TblMgr->Tbl[LoadTblCmd->Id].LastActionStatus = TBLMGR_STATUS_VALID;
-            CFE_EVS_SendEvent(TBLMGR_LOAD_SUCCESS_EID, CFE_EVS_INFORMATION, 
+            CFE_EVS_SendEvent(TBLMGR_LOAD_SUCCESS_EID, CFE_EVS_EventType_INFORMATION, 
                               "Successfully %sd table %d using file %s",
                               TBLMGR_LoadTypeStr(LoadTblCmd->LoadType),
                               LoadTblCmd->Id, LoadTblCmd->Filename);
          }
       }
    }
-   else
-   {
-      CFE_EVS_SendEvent(TBLMGR_LOAD_ID_ERR_EID, CFE_EVS_ERROR, 
+   else {
+      
+      CFE_EVS_SendEvent(TBLMGR_LOAD_ID_ERR_EID, CFE_EVS_EventType_ERROR, 
                         "Invalid table load ID %d. Greater than last registered ID %d.",
                         LoadTblCmd->Id, (TblMgr->NextAvailableId-1));     
    }
@@ -285,13 +285,13 @@ const char* TBLMGR_LoadTypeStr(int8 LoadType)
 **     during registration 
 ** 
 */
-boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
+boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
 {
 
-   boolean RetStatus = FALSE;
+   bool RetStatus = false;
    TBLMGR_Tbl_t*   Tbl;
    TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
-   const  TBLMGR_DumpTblCmdMsg_t *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg_t *) MsgPtr;
+   const  TBLMGR_DumpTblCmdMsg_t *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg_t *) SbBufPtr;
       
    if (DumpTblCmd->Id < TblMgr->NextAvailableId)
    {
@@ -305,7 +305,7 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
          if (RetStatus)
          {
             TblMgr->Tbl[DumpTblCmd->Id].LastActionStatus = TBLMGR_STATUS_VALID;
-            CFE_EVS_SendEvent(TBLMGR_DUMP_SUCCESS_EID, CFE_EVS_INFORMATION, 
+            CFE_EVS_SendEvent(TBLMGR_DUMP_SUCCESS_EID, CFE_EVS_EventType_INFORMATION, 
                               "Successfully dumped table %d to file %s",
                               DumpTblCmd->Id, DumpTblCmd->Filename);
          }
@@ -313,7 +313,8 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
    }
    else
    {
-      CFE_EVS_SendEvent(TBLMGR_DUMP_ID_ERR_EID, CFE_EVS_ERROR, "Invalid table dump ID %d. Greater than last registered ID %d.",
+      
+      CFE_EVS_SendEvent(TBLMGR_DUMP_ID_ERR_EID, CFE_EVS_EventType_ERROR, "Invalid table dump ID %d. Greater than last registered ID %d.",
                         DumpTblCmd->Id, (TblMgr->NextAvailableId-1));     
    }
 
@@ -328,14 +329,14 @@ boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr)
 ** Notes:
 **  1. Must used the TBLMGR_TblLoadFuncPtr function definition
 */
-static boolean LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename)
+static bool LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename)
 {
 
-   CFE_EVS_SendEvent (TBLMGR_LOAD_STUB_ERR_EID, CFE_EVS_ERROR,
+   CFE_EVS_SendEvent (TBLMGR_LOAD_STUB_ERR_EID, CFE_EVS_EventType_ERROR,
                       "Application did not define a load table function for table %d",
                       Tbl->Id);
 
-   return FALSE;
+   return false;
 
 } /* End LoadTblStub() */
 
@@ -346,13 +347,13 @@ static boolean LoadTblStub(TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filena
 ** Notes:
 **  1. Must used the TBLMGR_TblDumpFuncPtr function definition
 */
-static boolean DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename)
+static bool DumpTblStub(TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename)
 {
 
-   CFE_EVS_SendEvent(TBLMGR_DUMP_STUB_ERR_EID, CFE_EVS_ERROR,
-                     "Application did not define a dump table function for table %d",
-                     Tbl->Id);
+   CFE_EVS_SendEvent (TBLMGR_DUMP_STUB_ERR_EID, CFE_EVS_EventType_ERROR,
+                      "Application did not define a dump table function for table %d",
+                      Tbl->Id);
 
-   return FALSE;
+   return false;
 
 } /* End DumpTblStub() */

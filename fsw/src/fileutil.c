@@ -50,15 +50,15 @@ static void LoadOpenFileData(uint32 ObjId, void* CallbackArg);
 **
 ** Append a path separator to a directory path. 
 ** 
-** Returns FALSE if invalid string length or appending the separator would
+** Returns false if invalid string length or appending the separator would
 ** exceed the BufferLen.
 **
 */
-boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen)
+bool FileUtil_AppendPathSep(char *DirName, uint16 BufferLen)
 {
 
    uint16 StringLen;
-   boolean RetStatus = FALSE;
+   bool   RetStatus = false;
    
    StringLen = strlen(DirName);
 
@@ -72,13 +72,12 @@ boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen)
          {
          
             strcat(DirName, FILEUTIL_DIR_SEP_STR);
-            RetStatus = TRUE;        
+            RetStatus = true;        
    
          }      
       } /* End if no path separator */
-      else
-      {
-          RetStatus = TRUE;
+      else {
+          RetStatus = true;
       }
       
    } /* End if valid string length */
@@ -94,12 +93,12 @@ boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen)
 ** Return file state (FileUtil_FileState) and optionally include the file size
 ** and time for existing files.
 */
-FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, boolean IncludeSizeTime)
+FileUtil_FileInfo FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime)
 {
    
-   os_fstat_t                 FileStatus;
-   FileUtil_FileInfo_t        FileInfo;
-   FileUtil_CheckFileState_t  FileState;
+   os_fstat_t               FileStatus;
+   FileUtil_FileInfo        FileInfo;
+   FileUtil_CheckFileState  FileState;
     
    FileInfo.IncludeSizeTime = IncludeSizeTime;
    FileInfo.Size  = 0;
@@ -110,7 +109,7 @@ FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, 
    /* TODO - Fix all file utilities to accept a length parameter with a OS_MAX_PATH_LEN check */
    if (FilenameBufLen != OS_MAX_PATH_LEN)
    {
-      CFE_EVS_SendEvent(FILEUTIL_MAX_PATH_LEN_CONFLICT_EID, CFE_EVS_ERROR, 
+      CFE_EVS_SendEvent(FILEUTIL_MAX_PATH_LEN_CONFLICT_EID, CFE_EVS_EventType_ERROR, 
          "FileUtil_GetFileInfo() checking a filename buffer len=%d using a utility hard coded with OS_MAX_PATH_LEN=%d",
          FilenameBufLen, OS_MAX_PATH_LEN);
    }
@@ -133,7 +132,7 @@ FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, 
          else
          {
             
-            FileState.IsOpen = FALSE;
+            FileState.IsOpen = false;
             FileState.Name   = Filename;
 
             OS_ForEachObject(0, CheckFileOpenState, &FileState);
@@ -220,27 +219,27 @@ uint16 FileUtil_GetOpenFileList(FileUtil_OpenFileList_t *OpenFileList)
 ** Read a line from a text file.
 **
 */
-boolean FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar)
+bool FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar) 
 {
 
    char    c, *DestPtr;
    int32   ReadStatus;
-   boolean RetStatus = FALSE;
+   bool    RetStatus = false;
    
    /* Decrement MaxChar to leave space for termination character */
    for (DestPtr = DestBuf, MaxChar--; MaxChar > 0; MaxChar--)
    {
       
-	   ReadStatus = OS_read(FileHandle, &c, 1);
+	  ReadStatus = OS_read(FileHandle, &c, 1);
 	  
-	   if (ReadStatus == 0  || ReadStatus == OS_FS_ERROR)
+	  if (ReadStatus == 0  || ReadStatus == OS_ERROR)
          break;
       
-	   *DestPtr++ = c;
+	  *DestPtr++ = c;
       
-	   if (c == '\n')
-      {
-         RetStatus = TRUE;
+	  if (c == '\n')
+	  {
+         RetStatus = true;
          break;
       }
    
@@ -259,11 +258,11 @@ boolean FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar)
 ** Notes:
 **  1. Verify file name len, termination, and characters are valid.
 */
-boolean FileUtil_VerifyFilenameStr(const char* Filename)
+bool FileUtil_VerifyFilenameStr(const char* Filename)
 {
 
-   int16    Len = 0;
-   boolean  RetStatus = FALSE;
+   int16  Len = 0;
+   bool   RetStatus = false;
    
    /* Search file system name buffer for a string terminator */
    while (Len < OS_MAX_PATH_LEN)
@@ -275,23 +274,23 @@ boolean FileUtil_VerifyFilenameStr(const char* Filename)
    if (Len == 0)
    {
       /* TODO - Could allow a default filename to be used when no file specified */
-      CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_LEN_EID, CFE_EVS_ERROR, "Invalid filename string: Length is 0");
+      CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_LEN_EID, CFE_EVS_EventType_ERROR, "Invalid filename string: Length is 0");
    } 
    else if (Len == OS_MAX_PATH_LEN)
    {
-      CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_STR_EID, CFE_EVS_ERROR, "Invalid filename string: No NUL termintaion character");     
+      CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_STR_EID, CFE_EVS_EventType_ERROR, "Invalid filename string: No NUL termintaion character");     
    }
    else
    {
    
       /* Verify characters in string name */
-      if (IsValidFilename((char *)Filename, Len))   /* Cast away the const. CFS really should change */
-      {
-         RetStatus = TRUE;  
+      if (IsValidFilename(Filename, Len))
+      {  
+         RetStatus = true;  
       }
       else
-      {
-         CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_CHR_EID, CFE_EVS_ERROR, "Invalid characters in filename %s",Filename);     
+      {   
+         CFE_EVS_SendEvent(FILEUTIL_INVLD_FILENAME_CHR_EID, CFE_EVS_EventType_ERROR, "Invalid characters in filename %s",Filename);     
       }
       
    } /* End if valid length */
@@ -311,26 +310,25 @@ boolean FileUtil_VerifyFilenameStr(const char* Filename)
 **     are scenarios when the user must stil open the file.  For example when
 **     they pass the filename to a third party library. 
 */
-boolean FileUtil_VerifyFileForRead(const char* Filename)
+bool FileUtil_VerifyFileForRead(const char* Filename)
 {
 
-   int32    FileDescriptor;
-   boolean  RetStatus = FALSE;
+   osal_id_t  FileHandle;
+   int32      OsStatus;
+   bool       RetStatus = false;
    
    if (FileUtil_VerifyFilenameStr(Filename))
    {
       
-      FileDescriptor = OS_open(Filename, OS_READ_ONLY, 0);
-         
-      /* OS convention is negative return value is an error */ 
-      if (FileDescriptor >= 0)
-      {
-         OS_close (FileDescriptor);
-         RetStatus = TRUE;  
+      OsStatus = OS_OpenCreate(&FileHandle, Filename, OS_FILE_FLAG_NONE, OS_READ_WRITE);
+      if (OsStatus == OS_SUCCESS)
+      {   
+         OS_close (FileHandle);
+         RetStatus = true;  
       }
       else
-      {
-         CFE_EVS_SendEvent(FILEUTIL_FILE_READ_OPEN_ERR_EID, CFE_EVS_ERROR, "Read file open failed for %s ",Filename);     
+      {   
+         CFE_EVS_SendEvent(FILEUTIL_FILE_READ_OPEN_ERR_EID, CFE_EVS_EventType_ERROR, "Read file open failed for %s ",Filename);     
       }
       
    } /* End if valid filename */
@@ -346,16 +344,16 @@ boolean FileUtil_VerifyFileForRead(const char* Filename)
 ** Notes:
 **  1. Verify file name is valid and that the directory exists.
 */
-boolean FileUtil_VerifyDirForWrite(const char* Filename)
+bool FileUtil_VerifyDirForWrite(const char* Filename)
 {
 
-   boolean  RetStatus = FALSE;
+   bool RetStatus = false;
    
    if (FileUtil_VerifyFilenameStr(Filename))
    {
       
       /* TODO - Find last \ and check if directory */
-      RetStatus = TRUE;  
+      RetStatus = true;  
       
    } /* End if valid filename */
    
@@ -393,13 +391,12 @@ static void CheckFileOpenState(uint32 ObjId, void* CallbackArg)
    if(OS_IdentifyObject(ObjId) == OS_OBJECT_TYPE_OS_STREAM)
    {
       
-      if (OS_FDGetInfo(ObjId, &FileProp) == OS_FS_SUCCESS)
-      {
+      if (OS_FDGetInfo(ObjId, &FileProp) == OS_SUCCESS) {
          
          if (strcmp(FileState->Name, FileProp.Path) == 0)
          {
             
-            FileState->IsOpen = TRUE;
+            FileState->IsOpen = true;
          }
       }
    }
@@ -472,10 +469,9 @@ static bool IsValidFilename(const char *Filename, uint32 Length)
 */
 static void LoadOpenFileData(uint32 ObjId, void* CallbackArg)
 {
-   
-   FileUtil_OpenFileList_t *OpenFileList = (FileUtil_OpenFileList_t*)CallbackArg;
-   CFE_ES_TaskInfo_t  TaskInfo;
-   OS_file_prop_t     FdProp;
+   FileUtil_OpenFileList *OpenFileList = (FileUtil_OpenFileList*)CallbackArg;
+   CFE_ES_TaskInfo_t      TaskInfo;
+   OS_file_prop_t         FdProp;
 
 
    if(OS_IdentifyObject(ObjId) == OS_OBJECT_TYPE_OS_STREAM)

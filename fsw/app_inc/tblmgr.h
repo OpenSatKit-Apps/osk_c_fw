@@ -95,23 +95,23 @@
 
 typedef struct
 {
-   uint8   CmdHeader[CFE_SB_CMD_HDR_SIZE]; /* cFE Software Bus Command Message Header     */
+   CFE_MSG_CommandHeader_t  CmdHeader;
    uint8   Id;                             /* Table identifier                            */
    uint8   LoadType;                       /* Replace or update table records             */
    char    Filename[OS_MAX_PATH_LEN];      /* ASCII text string of full path and filename */
 
 } TBLMGR_LoadTblCmdMsg_t;
-#define TBLMGR_LOAD_TBL_CMD_DATA_LEN  (sizeof(TBLMGR_LoadTblCmdMsg_t) - CFE_SB_CMD_HDR_SIZE)
+#define TBLMGR_LOAD_TBL_CMD_DATA_LEN  (sizeof(TBLMGR_LoadTblCmdMsg_t) - sizeof(CFE_MSG_CommandHeader_t))
 
 typedef struct
 {
-   uint8   CmdHeader[CFE_SB_CMD_HDR_SIZE]; /* cFE Software Bus Command Message Header     */
+   CFE_MSG_CommandHeader_t  CmdHeader;
    uint8   Id;                             /* Table identifier                            */
    uint8   DumpType;                       /* Placeholder for user defined qualifier      */
    char    Filename[OS_MAX_PATH_LEN];      /* ASCII text string of full path and filename */
 
 } TBLMGR_DumpTblCmdMsg_t;
-#define TBLMGR_DUMP_TBL_CMD_DATA_LEN  (sizeof(TBLMGR_DumpTblCmdMsg_t) - CFE_SB_CMD_HDR_SIZE)
+#define TBLMGR_DUMP_TBL_CMD_DATA_LEN  (sizeof(TBLMGR_DumpTblCmdMsg_t) - sizeof(CFE_MSG_CommandHeader_t))
 
 
 /* 
@@ -122,16 +122,16 @@ typedef struct
 
 typedef struct TBLMGR_Tbl TBLMGR_Tbl_t;
 
-typedef boolean (*TBLMGR_LoadTblFuncPtr_t) (TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename);
-typedef boolean (*TBLMGR_DumpTblFuncPtr_t) (TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename);
+typedef bool (*TBLMGR_LoadTblFuncPtr_t) (TBLMGR_Tbl_t* Tbl, uint8 LoadType, const char* Filename);
+typedef bool (*TBLMGR_DumpTblFuncPtr_t) (TBLMGR_Tbl_t* Tbl, uint8 DumpType, const char* Filename);
 
 struct TBLMGR_Tbl
 {
   
    uint8   Id; 
    uint8   LastAction;
-   boolean LastActionStatus;
-   boolean Loaded;
+   bool    LastActionStatus;
+   bool    Loaded;
    char    Filename[OS_MAX_PATH_LEN];
    
    TBLMGR_LoadTblFuncPtr_t  LoadFuncPtr;
@@ -222,7 +222,7 @@ const TBLMGR_Tbl_t* TBLMGR_GetTblStatus(TBLMGR_Class_t* TblMgr, uint8 TblId);
 **     during registration 
 ** 
 */
-boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+bool TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 
 
 /******************************************************************************
@@ -234,7 +234,7 @@ boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
 **     during registration 
 ** 
 */
-boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+bool TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 
 
 /******************************************************************************

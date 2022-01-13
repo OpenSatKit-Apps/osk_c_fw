@@ -42,9 +42,9 @@
 /** Local File Function Prototypes **/
 /************************************/
 
-static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl);
-static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr);
-static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type);
+static bool BuildJsonTblObjArray (INITBL_Class_t* IniTbl);
+static bool LoadJsonData(size_t JsonFileLen, void* UserDataPtr);
+static bool ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type);
 
 
 /******************************************************************************
@@ -54,11 +54,11 @@ static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSON
 **    1. This must be called prior to any other functions
 **
 */
-boolean INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniTblFile,
-                           INILIB_CfgEnum_t* CfgEnum)
+bool INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniTblFile,
+                       INILIB_CfgEnum_t* CfgEnum)
 {
    
-   boolean RetStatus = FALSE;
+   bool RetStatus = false;
    
    CFE_PSP_MemSet(IniTbl, 0, sizeof(INITBL_Class_t));
    IniTbl->CfgEnum = *CfgEnum;
@@ -144,11 +144,11 @@ const char* INITBL_GetStrConfig(INITBL_Class_t* IniTbl, uint16 Param)
 **      CJSON_Obj_t that can be used to process the JSON ini file.
 **
 */
-static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
+static bool BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
 {
 
-   boolean RetStatus = TRUE;
-   int Param, i;
+   bool RetStatus = true;
+   int  Param, i;
    const char *CfgStrPtr;
    const char *CfgTypePtr;
    
@@ -178,7 +178,7 @@ static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
       
             JsonParam->TblData      = &IniTbl->CfgData[Param].Int;
             JsonParam->TblDataLen   = sizeof(uint32);
-            JsonParam->Updated      = FALSE;
+            JsonParam->Updated      = false;
             JsonParam->Type         = JSONNumber;
             strncpy(JsonParam->Query.Key, INITBL_JSON_CONFIG_OBJ_PREFIX, CJSON_MAX_KEY_LEN);
             strncat(JsonParam->Query.Key, CfgStrPtr, CJSON_MAX_KEY_LEN);
@@ -190,7 +190,7 @@ static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
 
             JsonParam->TblData      = &IniTbl->CfgData[Param].Str;
             JsonParam->TblDataLen   = INITBL_MAX_CFG_STR_LEN;
-            JsonParam->Updated      = FALSE;
+            JsonParam->Updated      = false;
             JsonParam->Type         = JSONString;
             strncpy(JsonParam->Query.Key, INITBL_JSON_CONFIG_OBJ_PREFIX, CJSON_MAX_KEY_LEN);
             strncat(JsonParam->Query.Key, CfgStrPtr, CJSON_MAX_KEY_LEN);
@@ -199,7 +199,7 @@ static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
          }  /* End if string */
          else 
          {
-            RetStatus = FALSE;
+            RetStatus = false;
             CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
                                "Invalid Configuration parameter type %s", CfgTypePtr);
          }
@@ -209,7 +209,7 @@ static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
    else
    {
       
-      RetStatus = FALSE;
+      RetStatus = false;
       CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
                         "Number of configuration parameters %d is greater than IniTbl max %d",
                         IniTbl->CfgEnum.End, (INITBL_MAX_CFG_ITEMS+1));
@@ -231,10 +231,10 @@ static boolean BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
 **     configuration parameters should be defined and it is considered and
 **     error if this is not the case.
 */
-static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
+static bool LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
 {
 
-   boolean         RetStatus = FALSE;
+   bool            RetStatus = false;
    size_t          ObjLoadCnt;
    INITBL_Class_t* IniTbl = (INITBL_Class_t*)UserDataPtr; 
 
@@ -245,7 +245,7 @@ static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
 
    if (ObjLoadCnt == IniTbl->JsonParamCnt)
    {
-      RetStatus = TRUE;
+      RetStatus = true;
       CFE_EVS_SendEvent(INITBL_LOAD_JSON_EID, CFE_EVS_INFORMATION, 
                         "JSON initialization file successfully processed with %ld parameters",
                         IniTbl->JsonParamCnt);
@@ -266,10 +266,10 @@ static boolean LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
 ** Function: ValidJsonObjCfg
 **
 */
-static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type)
+static bool ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type)
 {
    
-   boolean RetStatus = FALSE;
+   bool RetStatus = false;
    
    
    CFE_EVS_SendEvent(INITBL_CFG_PARAM_EID, CFE_EVS_DEBUG,
@@ -285,7 +285,7 @@ static boolean ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSON
       {
          if (IniTbl->JsonParams[JsonObjIndex].Type == Type)
          {
-            RetStatus = TRUE;
+            RetStatus = true;
          }
          else
          {

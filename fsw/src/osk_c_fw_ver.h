@@ -6,6 +6,7 @@
 **   2.0.0 - Improved JSON API: Added const & simplified obj reg.
 **           Added PktUtil 
 **   3.0.0 - New baseline for OSK app repo compatible with cFE Bootes
+**   4.0.0 - New baseline for OSK app repo compatible with cFE Caelum
 **
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
@@ -27,7 +28,7 @@
 #define _osk_c_fw_ver_h_
 
 
-#define OSK_C_FW_MAJOR_VER    3
+#define OSK_C_FW_MAJOR_VER    4
 #define OSK_C_FW_MINOR_VER    0
 #define OSK_C_FW_LOCAL_REV    0
 

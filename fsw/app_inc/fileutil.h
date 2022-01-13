@@ -79,7 +79,7 @@ typedef enum
 typedef struct
 {
 
-   boolean IncludeSizeTime;
+   bool    IncludeSizeTime;
    uint32  Size;
    uint32  Time;
    uint32  Mode;
@@ -90,8 +90,8 @@ typedef struct
 typedef struct
 {
 
-   boolean  IsOpen;
-   char*    Name;
+   bool   IsOpen;
+   char*  Name;
 
 } FileUtil_CheckFileState_t;
 
@@ -135,7 +135,7 @@ typedef struct
 ** exceed the BufferLen.
 **
 */
-boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen);
+bool FileUtil_AppendPathSep(char *DirName, uint16 BufferLen);
 
 
 /******************************************************************************
@@ -145,7 +145,7 @@ boolean FileUtil_AppendPathSep(char *DirName, uint16 BufferLen);
 ** returns file state (FileUtil_FileState) and optionally includes the file size
 ** and time for existing files.
 */
-FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, boolean IncludeSizeTime);
+FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime);
 
 
 /******************************************************************************
@@ -174,7 +174,7 @@ const char* FileUtil_FileStateStr(FileUtil_FileState_t  FileState);
 ** Read a line from a text file.
 **
 */
-boolean FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar);
+bool FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar);
 
 
 /******************************************************************************
@@ -182,7 +182,7 @@ boolean FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar);
 **
 **  Verify file name len, termination, and characters are valid.
 */
-boolean FileUtil_VerifyFilenameStr(const char* Filename);
+bool FileUtil_VerifyFilenameStr(const char* Filename);
 
 
 /******************************************************************************
@@ -190,7 +190,7 @@ boolean FileUtil_VerifyFilenameStr(const char* Filename);
 **
 **   Verify file name is valid and that the file exists for a read operation.
 */
-boolean FileUtil_VerifyFileForRead(const char* Filename);
+bool FileUtil_VerifyFileForRead(const char* Filename);
 
 
 /******************************************************************************
@@ -198,6 +198,6 @@ boolean FileUtil_VerifyFileForRead(const char* Filename);
 **
 **   Verify file name is valid and that the directory exists.
 */
-boolean FileUtil_VerifyDirForWrite(const char* Filename);
+bool FileUtil_VerifyDirForWrite(const char* Filename);
 
 #endif /* _file_util_ */

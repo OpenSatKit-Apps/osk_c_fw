@@ -56,10 +56,10 @@ typedef struct
 /** Local Function Prototypes **/
 /*******************************/
 
-static boolean GetIdBit(STATEREP_Class_t*    StateRep,
-                        const char*          CallerStr,
-                        uint16               Id,
-                        StateRepBitStruct_t* StateRepBit);
+static bool GetIdBit(STATEREP_Class_t*    StateRep,
+                     const char*          CallerStr,
+                     uint16               Id,
+                     StateRepBitStruct_t* StateRepBit);
                          
 
 /******************************************************************************
@@ -103,14 +103,15 @@ void STATEREP_Constructor(STATEREP_Class_t*  StateRep,
 ** Notes:
 **    1. Must clear both the Software Bus report packet and NewReport.
 */
-boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class  */
-                             const CFE_SB_MsgPtr_t MsgPtr)      /* Pointer to STATEREP_ClearBitCmd struct      */
+bool STATEREP_ClearBitCmd(                void*  ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class  */
+                          const CFE_SB_Buffer_t* SbBufPtr)    /* Pointer to STATEREP_ClearBitCmd struct      */
 {
 
-   STATEREP_Class_t*          StateRep    = (STATEREP_Class_t*)ObjDataPtr;
-   STATEREP_ClearBitCmdMsg_t* ClearBitCmd = (STATEREP_ClearBitCmdMsg_t*)MsgPtr;
+   STATEREP_Class_t*        StateRep    = (STATEREP_Class_t*)ObjDataPtr;
+   STATEREP_ClearBitCmdMsg* ClearBitCmd = (STATEREP_ClearBitCmdMsg_t*)SbBufPtr;
 
-   boolean              RetStatus = TRUE;
+
+   bool                 RetStatus = true;
    StateRepBitStruct_t  StateRepBit;
 
    if (ClearBitCmd->Id == STATEREP_SELECT_ALL)
@@ -134,7 +135,7 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
       RetStatus = GetIdBit(StateRep, "State Reporter Rejected Clear Bit Cmd: ",
                            ClearBitCmd->Id, &StateRepBit);
       
-      if (RetStatus == TRUE)
+      if (RetStatus == true)
       {
 
          StateRepBit.Mask = (uint16)~StateRepBit.Mask;
@@ -161,19 +162,19 @@ boolean STATEREP_ClearBitCmd(                void* ObjDataPtr,  /* Pointer to an
 ** Notes:
 **    None
 */
-boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class   */
-                              const CFE_SB_MsgPtr_t MsgPtr)      /* Pointer to STATEREP_ConfigBitCmd struct */
+bool STATEREP_ConfigBitCmd(                void*  ObjDataPtr,  /* Pointer to an instance of a STATEREP_Class   */
+                           const CFE_SB_Buffer_t* SbBufPtr)    /* Pointer to STATEREP_ConfigBitCmd struct */
 
 {
 
    STATEREP_Class_t*            StateRep     = (STATEREP_Class_t*)ObjDataPtr;
-   STATEREP_ConfigBitCmdMsg_t*  ConfigBitCmd = (STATEREP_ConfigBitCmdMsg_t*)MsgPtr;
+   STATEREP_ConfigBitCmdMsg_t*  ConfigBitCmd = (STATEREP_ConfigBitCmdMsg_t*)SbBufPtr;
 
-   boolean  RetStatus = TRUE;
+   bool RetStatus = true;
 
    StateRepBitStruct_t  StateRepBit;
 
-   if (ConfigBitCmd->Enable == TRUE || ConfigBitCmd->Enable == FALSE)
+   if (ConfigBitCmd->Enable == true || ConfigBitCmd->Enable == false)
    {
 
       if (ConfigBitCmd->Id == STATEREP_SELECT_ALL)
@@ -203,7 +204,7 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
          RetStatus = GetIdBit(StateRep, "State Reporter Reject Config Bit Cmd:",
                               ConfigBitCmd->Id, &StateRepBit);
          
-         if (RetStatus == TRUE)
+         if (RetStatus == true)
          {
             
             if (ConfigBitCmd->Enable)
@@ -219,11 +220,11 @@ boolean STATEREP_ConfigBitCmd(                void* ObjDataPtr,  /* Pointer to a
    else
    {
 
-      CFE_EVS_SendEvent (STATEREP_CONFIG_CMD_ERR_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent (STATEREP_CONFIG_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
                          "State Reporter Reject Config Bit Cmd: Invalid enable value %d",
                          ConfigBitCmd->Enable);
 
-      RetStatus = FALSE;
+      RetStatus = false;
 
    } /* End if invalid boolean range */
   
@@ -285,14 +286,14 @@ void STATEREP_SetBit(STATEREP_Class_t*  StateRep,
                              uint16     Id)
 {
 
-   boolean              ValidId;
+   bool                 ValidId;
    StateRepBitStruct_t  StateRepBit;
 
       
    ValidId = GetIdBit(StateRep, "State Reporter Rejected Set Bit Call:",
                       Id, &StateRepBit);
       
-   if (ValidId == TRUE)
+   if (ValidId == true)
    {
 
       if (StateRep->BitConfig.Enabled[StateRepBit.WordIndex] & StateRepBit.Mask)
@@ -345,9 +346,7 @@ const char* STATEREP_TlmModeStr(STATEREP_TlmMode_t  TlmMode)
    if ( TlmMode == STATEREP_NEW_REPORT ||
         TlmMode == STATEREP_MERGE_REPORT)
    {
-   
       i = TlmMode;
-   
    }
         
    return TlmModeStr[i];
@@ -362,13 +361,13 @@ const char* STATEREP_TlmModeStr(STATEREP_TlmMode_t  TlmMode)
 **    1. If the ID is invalid (too big) then an event message is sent.
 **
 */
-static boolean GetIdBit(STATEREP_Class_t*    StateRep,
-                        const char*          CallerStr,
-                        uint16               Id,
-                        StateRepBitStruct_t* StateRepBit)                        
+static bool GetIdBit(STATEREP_Class_t*    StateRep,
+                     const char*          CallerStr,
+                     uint16               Id,
+                     StateRepBitStruct_t* StateRepBit)                        
 {
 
-   boolean  RetStatus = TRUE;
+   bool  RetStatus = true;
 
 
    if (Id < StateRep->BitConfig.IdLimit)
@@ -381,8 +380,8 @@ static boolean GetIdBit(STATEREP_Class_t*    StateRep,
    else
    {
 
-      RetStatus = FALSE;
-      CFE_EVS_SendEvent (STATEREP_INVALID_ID_EID, CFE_EVS_ERROR,
+      RetStatus = false;
+      CFE_EVS_SendEvent (STATEREP_INVALID_ID_EID, CFE_EVS_EventType_ERROR,
                          "%s Invalid identifier %d (Max ID = %d)",
                          CallerStr, Id, StateRep->BitConfig.IdLimit-1);
    }

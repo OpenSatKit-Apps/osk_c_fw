@@ -129,7 +129,7 @@ typedef struct
 ** Function: PktUtil_IsPacketFiltered
 **
 */
-boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil_Filter_t *Filter);
+bool PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil_Filter_t *Filter);
 
 
 /******************************************************************************
@@ -140,7 +140,7 @@ boolean PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil
 **      packet definitions typically don't use enumerated types so they can 
 **      control the storage size (prior to C++11).
 */
-boolean PktUtil_IsFilterTypeValid(uint16 FilterType);
+bool PktUtil_IsFilterTypeValid(uint16 FilterType);
 
 
 #endif /* _pkt_util_ */
