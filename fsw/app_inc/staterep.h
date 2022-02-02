@@ -129,7 +129,7 @@ typedef struct
 typedef struct
 {
 
-   uint8            Hdr[CFE_SB_TLM_HDR_SIZE];
+   CFE_MSG_TelemetryHeader_t TlmHeader;
    STATEREP_Bits_t  Bits;
 
 } STATEREP_TlmMsg_t;
@@ -143,7 +143,7 @@ typedef struct
 typedef struct
 {
 
-   uint8    CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_MSG_CommandHeader_t  CmdHeader;
    uint16   Id;        /* Single identifier: 0..(STATEREP_BIT_ID_MAX-1) or STATEREP_SELECT_ALL */
 
 } STATEREP_ClearBitCmdMsg_t;
@@ -153,7 +153,7 @@ typedef struct
 typedef struct
 {
 
-   uint8    CmdHeader[CFE_SB_CMD_HDR_SIZE];
+   CFE_MSG_CommandHeader_t  CmdHeader;
    uint16   Id;           /* Single identifier: 0..(STATEREP_BIT_ID_MAX-1) or STATEREP_SELECT_ALL */
    uint16   Enable;       /* TRUE - Enable an ID, FALSE - Disable an ID (keep word aligned)       */
 

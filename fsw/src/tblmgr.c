@@ -202,13 +202,13 @@ const TBLMGR_Tbl_t* TBLMGR_GetTblStatus(TBLMGR_Class_t* TblMgr, uint8 TblId)
 **     during registration
 ** 
 */
-boolean TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
+bool TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr)
 {
 
-   boolean RetStatus = FALSE;
+   bool RetStatus = false;
    TBLMGR_Tbl_t*   Tbl;
    TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
-   const  TBLMGR_LoadTblCmdMsg_t* LoadTblCmd = (const TBLMGR_LoadTblCmdMsg_t *) SbBufPtr;
+   const  TBLMGR_LoadTblCmdMsg_t* LoadTblCmd = (const TBLMGR_LoadTblCmdMsg_t *) MsgPtr;
 
    if (DBG_TBLMGR) OS_printf("TBLMGR_LoadTblCmd() Entry\n");
 
@@ -285,13 +285,13 @@ const char* TBLMGR_LoadTypeStr(int8 LoadType)
 **     during registration 
 ** 
 */
-boolean TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
+bool TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr)
 {
 
    bool RetStatus = false;
    TBLMGR_Tbl_t*   Tbl;
    TBLMGR_Class_t* TblMgr = (TBLMGR_Class_t *) ObjDataPtr;
-   const  TBLMGR_DumpTblCmdMsg_t *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg_t *) SbBufPtr;
+   const  TBLMGR_DumpTblCmdMsg_t *DumpTblCmd = (const TBLMGR_DumpTblCmdMsg_t *) MsgPtr;
       
    if (DumpTblCmd->Id < TblMgr->NextAvailableId)
    {

@@ -107,8 +107,8 @@ bool STATEREP_ClearBitCmd(                void*  ObjDataPtr,  /* Pointer to an i
                           const CFE_SB_Buffer_t* SbBufPtr)    /* Pointer to STATEREP_ClearBitCmd struct      */
 {
 
-   STATEREP_Class_t*        StateRep    = (STATEREP_Class_t*)ObjDataPtr;
-   STATEREP_ClearBitCmdMsg* ClearBitCmd = (STATEREP_ClearBitCmdMsg_t*)SbBufPtr;
+   STATEREP_Class_t*          StateRep    = (STATEREP_Class_t*)ObjDataPtr;
+   STATEREP_ClearBitCmdMsg_t* ClearBitCmd = (STATEREP_ClearBitCmdMsg_t*)SbBufPtr;
 
 
    bool                 RetStatus = true;

@@ -2,7 +2,7 @@
 ** Purpose: OSK App C Framework Library file utilities
 **
 ** Notes:
-**   None
+**   1. LoadOpenFileData() callback is not reentrant and needs to be fixed
 **
 ** References:
 **   1. OpenSatKit Object-based Application Developer's Guide.
@@ -35,9 +35,8 @@
 /** Local Functions **/
 /*********************/
 
-static void CheckFileOpenState(uint32 ObjId, void* CallbackArg);
 static bool IsValidFilename(const char *Filename, uint32 Length);
-static void LoadOpenFileData(uint32 ObjId, void* CallbackArg);
+static void LoadOpenFileData(osal_id_t ObjId, void* CallbackArg);
 
 
 /************************/
@@ -90,15 +89,14 @@ bool FileUtil_AppendPathSep(char *DirName, uint16 BufferLen)
 /******************************************************************************
 ** Function: FileUtil_GetFileInfo
 **
-** Return file state (FileUtil_FileState) and optionally include the file size
+** Return file state (FileUtil_FileInfo_t) and optionally include the file size
 ** and time for existing files.
 */
-FileUtil_FileInfo FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime)
+FileUtil_FileInfo_t FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime)
 {
    
-   os_fstat_t               FileStatus;
-   FileUtil_FileInfo        FileInfo;
-   FileUtil_CheckFileState  FileState;
+   os_fstat_t                FileStatus;
+   FileUtil_FileInfo_t       FileInfo;
     
    FileInfo.IncludeSizeTime = IncludeSizeTime;
    FileInfo.Size  = 0;
@@ -117,7 +115,7 @@ FileUtil_FileInfo FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufL
    if (FileUtil_VerifyFilenameStr(Filename))
    {
       
-      /* Check to see if Filename is exists */
+      /* Check to see if Filename exists */
       if (OS_stat(Filename, &FileStatus) == OS_SUCCESS)
       {
          
@@ -131,13 +129,12 @@ FileUtil_FileInfo FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufL
          }
          else
          {
-            
-            FileState.IsOpen = false;
-            FileState.Name   = Filename;
 
-            OS_ForEachObject(0, CheckFileOpenState, &FileState);
-
-            FileInfo.State = FileState.IsOpen? FILEUTIL_FILE_OPEN : FILEUTIL_FILE_CLOSED;
+            FileInfo.State = FILEUTIL_FILE_CLOSED;
+            if (OS_FileOpenCheck(Filename) == OS_SUCCESS)
+            {
+               FileInfo.State = FILEUTIL_FILE_OPEN;
+            }
 
             if (IncludeSizeTime)
             {
@@ -172,7 +169,8 @@ FileUtil_FileInfo FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufL
 const char* FileUtil_FileStateStr(FileUtil_FileState_t  FileState)
 {
 
-   static const char* FileStateStr[] = {
+   static const char* FileStateStr[] = 
+   {
       "Undefined", 
       "Invalid Filename",    /* FILEUTIL_FILENAME_INVALID */
       "Nonexistent File",    /* FILEUTIL_FILE_NONEXISTENT */
@@ -230,19 +228,19 @@ bool FileUtil_ReadLine (int FileHandle, char* DestBuf, int MaxChar)
    for (DestPtr = DestBuf, MaxChar--; MaxChar > 0; MaxChar--)
    {
       
-	  ReadStatus = OS_read(FileHandle, &c, 1);
-	  
-	  if (ReadStatus == 0  || ReadStatus == OS_ERROR)
+      ReadStatus = OS_read(FileHandle, &c, 1);
+
+      if (ReadStatus == 0  || ReadStatus == OS_ERROR)
          break;
       
-	  *DestPtr++ = c;
+      *DestPtr++ = c;
       
-	  if (c == '\n')
-	  {
+      if (c == '\n')
+      {
          RetStatus = true;
          break;
       }
-   
+
    } /* End for loop */
    
    *DestPtr = 0;
@@ -313,10 +311,11 @@ bool FileUtil_VerifyFilenameStr(const char* Filename)
 bool FileUtil_VerifyFileForRead(const char* Filename)
 {
 
+   bool       RetStatus = false;
    osal_id_t  FileHandle;
    int32      OsStatus;
-   bool       RetStatus = false;
-   
+   os_err_name_t OsErrStr;
+      
    if (FileUtil_VerifyFilenameStr(Filename))
    {
       
@@ -328,7 +327,9 @@ bool FileUtil_VerifyFileForRead(const char* Filename)
       }
       else
       {   
-         CFE_EVS_SendEvent(FILEUTIL_FILE_READ_OPEN_ERR_EID, CFE_EVS_EventType_ERROR, "Read file open failed for %s ",Filename);     
+         OS_GetErrorName(OsStatus, &OsErrStr);
+         CFE_EVS_SendEvent(FILEUTIL_FILE_READ_OPEN_ERR_EID, CFE_EVS_EventType_ERROR, 
+                           "Read file open failed for %s. Status = %s", Filename, OsErrStr);
       }
       
    } /* End if valid filename */
@@ -361,47 +362,6 @@ bool FileUtil_VerifyDirForWrite(const char* Filename)
 
 } /* End FileUtil_VerifyDirForWrite() */
 
-
-/******************************************************************************
-** Function: CheckFileOpenState
-**
-** Callback function for OS_ForEachObject() to check whether a file is open.
-** This function is tightly coupledd with FileUtil_GetFileInfo() so only set
-** File->IsOpen if a file is verified as open otherwise preserve the state.  
-**
-*/
-static void CheckFileOpenState(uint32 ObjId, void* CallbackArg)
-{
-   
-   FileUtil_CheckFileState_t* FileState = (FileUtil_CheckFileState_t *)CallbackArg;
-   OS_file_prop_t FileProp;
-
-   if(FileState == (FileUtil_CheckFileState_t *)NULL)
-   {
-      return;
-   }
-   else if (FileState->Name == (char *)NULL)
-   {
-      return;
-   }
-   
-   /*
-   ** Get system info for stream objects and compare names
-   */
-   if(OS_IdentifyObject(ObjId) == OS_OBJECT_TYPE_OS_STREAM)
-   {
-      
-      if (OS_FDGetInfo(ObjId, &FileProp) == OS_SUCCESS) {
-         
-         if (strcmp(FileState->Name, FileProp.Path) == 0)
-         {
-            
-            FileState->IsOpen = true;
-         }
-      }
-   }
-
-} /* End CheckFileOpenState() */
 
 
 /******************************************************************************
@@ -461,17 +421,39 @@ static bool IsValidFilename(const char *Filename, uint32 Length)
 } /* End IsValidFilename */
 
 
+
+/******************************************************************************
+** Function: TaskId_FromOSAL
+**
+** Notes:
+**  1. Copied from private function CFE_ES_TaskId_FromOSAL(osal_id_t id). Not
+**     define in local function block at top of file because this is only used
+**     below and should be removed ASAP. 
+**  2. TODO - Create long term solution for TaskId_FromOSAL()
+*/
+static CFE_ES_TaskId_t TaskId_FromOSAL(osal_id_t id)
+{
+    CFE_ResourceId_t Result;
+    unsigned long    Val;
+
+    Val    = OS_ObjectIdToInteger(id);
+    Result = CFE_ResourceId_FromInteger(Val ^ CFE_RESOURCEID_MARK);
+
+    return CFE_ES_TASKID_C(Result);
+}
+
 /******************************************************************************
 ** Function: LoadOpenFileData
 **
 ** Notes:
 **  1. Callback function for OS_ForEachObject()
 */
-static void LoadOpenFileData(uint32 ObjId, void* CallbackArg)
+static void LoadOpenFileData(osal_id_t ObjId, void* CallbackArg)
 {
-   FileUtil_OpenFileList *OpenFileList = (FileUtil_OpenFileList*)CallbackArg;
-   CFE_ES_TaskInfo_t      TaskInfo;
-   OS_file_prop_t         FdProp;
+
+   FileUtil_OpenFileList_t* OpenFileList = (FileUtil_OpenFileList_t*)CallbackArg;
+   CFE_ES_TaskInfo_t        TaskInfo;
+   OS_file_prop_t           FdProp;
 
 
    if(OS_IdentifyObject(ObjId) == OS_OBJECT_TYPE_OS_STREAM)
@@ -486,10 +468,10 @@ static void LoadOpenFileData(uint32 ObjId, void* CallbackArg)
             strncpy(OpenFileList->Entry[OpenFileList->OpenCount].Filename,
                     FdProp.Path, OS_MAX_PATH_LEN);
 
-            /* Get the name of the application that opened the file */
+            // Get the name of the application that opened the file
             memset(&TaskInfo, 0, sizeof(CFE_ES_TaskInfo_t));
 
-            if(CFE_ES_GetTaskInfo(&TaskInfo, FdProp.User) == CFE_SUCCESS)
+            if(CFE_ES_GetTaskInfo(&TaskInfo, TaskId_FromOSAL(FdProp.User)) == CFE_SUCCESS)
             {
                
                strncpy(OpenFileList->Entry[OpenFileList->OpenCount].AppName,
@@ -501,4 +483,6 @@ static void LoadOpenFileData(uint32 ObjId, void* CallbackArg)
       ++OpenFileList->OpenCount;
    }
 
+return;
+ 
 } /* End LoadOpenFileData() */

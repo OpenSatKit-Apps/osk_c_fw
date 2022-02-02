@@ -44,7 +44,7 @@
 
 static bool BuildJsonTblObjArray (INITBL_Class_t* IniTbl);
 static bool LoadJsonData(size_t JsonFileLen, void* UserDataPtr);
-static bool ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type);
+static bool ValidJsonObjCfg(const INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type);
 
 
 /******************************************************************************
@@ -70,7 +70,7 @@ bool INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniTblFile,
    }
    else 
    {
-      CFE_EVS_SendEvent(INITBL_CONFIG_DEF_ERR_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent(INITBL_CONFIG_DEF_ERR_EID, CFE_EVS_EventType_ERROR,
                         "JSON INITBL definition error. JSON config file contains % d which is greater than frame maximum defined at %d",
                         IniTbl->CfgEnum.End, INITBL_MAX_CFG_ITEMS);
    }
@@ -92,7 +92,7 @@ bool INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniTblFile,
 **       returned and an event message is sent.
 **
 */
-uint32 INITBL_GetIntConfig(INITBL_Class_t* IniTbl, uint16 Param)
+uint32 INITBL_GetIntConfig(const INITBL_Class_t* IniTbl, uint16 Param)
 {
    
    uint32 RetValue = 0;
@@ -120,7 +120,7 @@ uint32 INITBL_GetIntConfig(INITBL_Class_t* IniTbl, uint16 Param)
 **       is returned and an event message is sent.
 **
 */
-const char* INITBL_GetStrConfig(INITBL_Class_t* IniTbl, uint16 Param)
+const char* INITBL_GetStrConfig(const INITBL_Class_t* IniTbl, uint16 Param)
 {
    
    const char* RetStrPtr = NULL;
@@ -200,7 +200,7 @@ static bool BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
          else 
          {
             RetStatus = false;
-            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
+            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_EventType_ERROR,
                                "Invalid Configuration parameter type %s", CfgTypePtr);
          }
 
@@ -210,7 +210,7 @@ static bool BuildJsonTblObjArray (INITBL_Class_t* IniTbl)
    {
       
       RetStatus = false;
-      CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR,
+      CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_EventType_ERROR,
                         "Number of configuration parameters %d is greater than IniTbl max %d",
                         IniTbl->CfgEnum.End, (INITBL_MAX_CFG_ITEMS+1));
                       
@@ -246,13 +246,13 @@ static bool LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
    if (ObjLoadCnt == IniTbl->JsonParamCnt)
    {
       RetStatus = true;
-      CFE_EVS_SendEvent(INITBL_LOAD_JSON_EID, CFE_EVS_INFORMATION, 
+      CFE_EVS_SendEvent(INITBL_LOAD_JSON_EID, CFE_EVS_EventType_INFORMATION, 
                         "JSON initialization file successfully processed with %ld parameters",
                         IniTbl->JsonParamCnt);
    }
    else
    {
-      CFE_EVS_SendEvent(INITBL_LOAD_JSON_ERR_EID, CFE_EVS_ERROR, 
+      CFE_EVS_SendEvent(INITBL_LOAD_JSON_ERR_EID, CFE_EVS_EventType_ERROR, 
                         "Error processing JSON initialization file. %ld of %ld parameters processed",
                         ObjLoadCnt, IniTbl->JsonParamCnt);  
    }
@@ -266,13 +266,13 @@ static bool LoadJsonData(size_t JsonFileLen, void* UserDataPtr)
 ** Function: ValidJsonObjCfg
 **
 */
-static bool ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type)
+static bool ValidJsonObjCfg(const INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTypes_t Type)
 {
    
    bool RetStatus = false;
    
    
-   CFE_EVS_SendEvent(INITBL_CFG_PARAM_EID, CFE_EVS_DEBUG,
+   CFE_EVS_SendEvent(INITBL_CFG_PARAM_EID, CFE_EVS_EventType_DEBUG,
                      "ValidJsonObjCfg %d: Type = %s, Key %s with type %s\n", 
                      JsonObjIndex, CJSON_ObjTypeStr(Type), 
                      IniTbl->JsonParams[JsonObjIndex].Query.Key, 
@@ -289,21 +289,21 @@ static bool ValidJsonObjCfg(INITBL_Class_t* IniTbl, uint16 JsonObjIndex, JSONTyp
          }
          else
          {
-            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, 
+            CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_EventType_ERROR, 
                               "Attempt to retrieve parameter of type %s that was loaded as type %s",
                               CJSON_ObjTypeStr(Type), CJSON_ObjTypeStr(IniTbl->JsonParams[JsonObjIndex].Type));      
          }
       }
       else
       {
-         CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, 
+         CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_EventType_ERROR, 
                            "Attempt to retrieve uninitialized parameter %d",
                            JsonObjIndex);
       }         
    }
    else
    {
-      CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_ERROR, "Attempt to retrieve invalid parameter %d that is not in valid range: %d < param < %d",
+      CFE_EVS_SendEvent(INITBL_CFG_PARAM_ERR_EID, CFE_EVS_EventType_ERROR, "Attempt to retrieve invalid parameter %d that is not in valid range: %d < param < %d",
                         JsonObjIndex, IniTbl->CfgEnum.Start, IniTbl->CfgEnum.End);
    }
    

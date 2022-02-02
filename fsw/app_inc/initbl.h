@@ -103,7 +103,7 @@ bool INITBL_Constructor(INITBL_Class_t* IniTbl, const char* IniFile,
 **       parameters are defined correctly they should neverbe out of range. 
 **
 */
-uint32 INITBL_GetIntConfig(INITBL_Class_t*  IniTbl, uint16 Param);
+uint32 INITBL_GetIntConfig(const INITBL_Class_t* IniTbl, uint16 Param);
 
 
 /******************************************************************************
@@ -120,7 +120,7 @@ uint32 INITBL_GetIntConfig(INITBL_Class_t*  IniTbl, uint16 Param);
 **       parameters are defined correctly they should neverbe out of range. 
 **
 */
-const char* INITBL_GetStrConfig(INITBL_Class_t*  IniTbl, uint16 Param);
+const char* INITBL_GetStrConfig(const INITBL_Class_t* IniTbl, uint16 Param);
 
 
 #endif /* _ini_tbl_ */

@@ -57,16 +57,17 @@
 ** Event Message IDs
 */
 
-#define CHILDMGR_INIT_ERR_EID                    (CHILDMGR_BASE_EID + 0)
-#define CHILDMGR_INIT_COMPLETE_EID               (CHILDMGR_BASE_EID + 1)
-#define CHILDMGR_REG_INVALID_FUNC_CODE_EID       (CHILDMGR_BASE_EID + 2)
-#define CHILDMGR_EMPTY_TASK_Q_EID                (CHILDMGR_BASE_EID + 3)
-#define CHILDMGR_INVALID_Q_READ_IDX_EID          (CHILDMGR_BASE_EID + 4)
-#define CHILDMGR_TAKE_SEM_FAILED_EID             (CHILDMGR_BASE_EID + 5)
-#define CHILDMGR_INVOKE_CHILD_ERR_EID            (CHILDMGR_BASE_EID + 6)
-#define CHILDMGR_DISPATCH_UNUSED_FUNC_CODE_EID   (CHILDMGR_BASE_EID + 7)
-#define CHILDMGR_RUNTIME_ERR_EID                 (CHILDMGR_BASE_EID + 8)
-#define CHILDMGR_DEBUG_EID                       (CHILDMGR_BASE_EID + 9)
+#define CHILDMGR_INIT_ERR_EID                    (CHILDMGR_BASE_EID +  0)
+#define CHILDMGR_INIT_COMPLETE_EID               (CHILDMGR_BASE_EID +  1)
+#define CHILDMGR_REG_INVALID_FUNC_CODE_EID       (CHILDMGR_BASE_EID +  2)
+#define CHILDMGR_EMPTY_TASK_Q_EID                (CHILDMGR_BASE_EID +  3)
+#define CHILDMGR_INVALID_Q_READ_IDX_EID          (CHILDMGR_BASE_EID +  4)
+#define CHILDMGR_TAKE_SEM_FAILED_EID             (CHILDMGR_BASE_EID +  5)
+#define CHILDMGR_INVOKE_CHILD_ERR_EID            (CHILDMGR_BASE_EID +  6)
+#define CHILDMGR_Get_CHILD_ERR_EID               (CHILDMGR_BASE_EID +  7)
+#define CHILDMGR_DISPATCH_UNUSED_FUNC_CODE_EID   (CHILDMGR_BASE_EID +  8)
+#define CHILDMGR_RUNTIME_ERR_EID                 (CHILDMGR_BASE_EID +  9)
+#define CHILDMGR_DEBUG_EID                       (CHILDMGR_BASE_EID + 10)
 
 
 
@@ -98,8 +99,6 @@ typedef struct
    CFE_MSG_CommandHeader_t  CmdHeader;
    char    Payload[CHILDMGR_CMD_PAYLOAD_LEN];
    
-} CHILDMGR_CmdQ_Entry;
-
 } CHILDMGR_CmdQEntry_t;
 
 typedef struct
@@ -116,7 +115,7 @@ typedef struct
 } CHILDMGR_CmdQ_t;
 
 
-typedef bool (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_MsgPtr_t MsgPtr);
+typedef bool (*CHILDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 /*
 ** Objects register their command functions so each command structure
@@ -163,14 +162,14 @@ typedef struct CHILDMGR_Struct
 
    int32   RunStatus;
    uint32  PerfId;
-   uint32  TaskId;
+   CFE_ES_TaskId_t  TaskId;
    uint32  WakeUpSemaphore;
    
    uint16  ValidCmdCnt;
    uint16  InvalidCmdCnt;
 
-   uint8   CurrCmdCode;
-   uint8   PrevCmdCode;
+   CFE_MSG_FcnCode_t   CurrCmdCode;
+   CFE_MSG_FcnCode_t   PrevCmdCode;
 
    CHILDMGR_Cmd_t  Cmd[CHILDMGR_CMD_FUNC_TOTAL];
 
@@ -226,7 +225,7 @@ void CHILDMGR_ResetStatus(CHILDMGR_Class_t* ChildMgr);
 **   1. This command function is registered with the app's cmdmgr with all of
 **      the function codes that use the child task to process the command.
 */
-bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
+bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 
 /******************************************************************************

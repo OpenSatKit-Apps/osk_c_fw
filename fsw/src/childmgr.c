@@ -57,7 +57,7 @@ typedef struct {
 /*******************************/
 
 static void AppendIdToStr(char* NewStr, const char* BaseStr);
-static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBuPtr);
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 static void DispatchCmdFunc(CHILDMGR_Class_t* ChildMgr);
 static bool RegChildMgrInstance(CHILDMGR_Class_t* ChildMgr);
 static CHILDMGR_Class_t* GetChildMgrInstance(void);
@@ -169,7 +169,7 @@ bool CHILDMGR_RegisterFunc(CHILDMGR_Class_t* ChildMgr, uint16 FuncCode,
 {
 
    bool RetStatus = false;
-   
+
    if (FuncCode < CHILDMGR_CMD_FUNC_TOTAL)
    {
 
@@ -205,7 +205,7 @@ bool CHILDMGR_RegisterFuncAltCnt(CHILDMGR_Class_t* ChildMgr, uint16 FuncCode,
    if (CHILDMGR_RegisterFunc(ChildMgr, FuncCode, ObjDataPtr, ObjFuncPtr))
    {
       
-      ChildMgr->Cmd[FuncCode].AltCnt.Enabled = TRUE;      
+      ChildMgr->Cmd[FuncCode].AltCnt.Enabled = true;      
 
       RetStatus = true;
 
@@ -238,25 +238,25 @@ void CHILDMGR_ResetStatus(CHILDMGR_Class_t* ChildMgr)
 **      CHILDMGR_RegisterFunc() and the object data pointer must reference
 **      the ChildMgr instance.
 */
-bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_Buffer_t*  SbBufPtr)
+bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr)
 {
 
-   bool RetStatus = false;
-   CHILDMGR_Class* ChildMgr = (CHILDMGR_Class*)ObjDataPtr;
+   CHILDMGR_Class_t* ChildMgr = (CHILDMGR_Class_t*)ObjDataPtr;
    
-   char EventErrStr[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH] = "\0";
-   uint16 MsgLen;
-   
+   bool  RetStatus       = false;
    uint8 LocalQueueCount = ChildMgr->CmdQ.Count; /* Use local instance during checks */
+   CFE_MSG_Size_t    MsgSize;
    CFE_MSG_FcnCode_t FuncCode;
+   char EventErrStr[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH] = "\0";
    
-   CFE_MSG_GetFcnCode(&SbBufPtr->Msg, &FuncCode);
    
-   sprintf(EventErrStr, "Error dispatching commmand function %d. Undefined error", FuncCode);
+   CFE_MSG_GetFcnCode(MsgPtr, &FuncCode);
    
    CFE_EVS_SendEvent(CHILDMGR_DEBUG_EID, CFE_EVS_EventType_DEBUG,
       "CHILDMGR_InvokeChildCmd() Entry: fc=%d, ChildMgr->WakeUpSemaphore=%d,WriteIdx=%d,ReadIdx=%d,Count=%d\n",
       FuncCode,ChildMgr->WakeUpSemaphore,ChildMgr->CmdQ.WriteIndex,ChildMgr->CmdQ.ReadIndex,ChildMgr->CmdQ.Count);
+
+   sprintf(EventErrStr, "Error dispatching commmand function %d. Uncovered error case. This is a code bug!", FuncCode);
 
    /*
    ** Verify child task is active and queue interface is healthy
@@ -284,11 +284,12 @@ bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_Buffer_t*  SbBufPtr)
    else
    {
        
-      CFE_MSG_GetSize(&SbBufPtr->Msg, &MsgLen);
-      
-      if (MsgLen <= sizeof(CHILDMGR_CmdQ_Entry)) {
+      CFE_MSG_GetSize(MsgPtr, &MsgSize);
+
+      if (MsgSize <= sizeof(CHILDMGR_CmdQEntry_t))
+      {
          
-         memcpy(&(ChildMgr->CmdQ.Entry[ChildMgr->CmdQ.WriteIndex]), SbBufPtr, MsgLen);
+         memcpy(&(ChildMgr->CmdQ.Entry[ChildMgr->CmdQ.WriteIndex]), MsgPtr, (int)MsgSize+2); //todo: Resolve message size issue
 
          ++ChildMgr->CmdQ.WriteIndex;
 
@@ -319,8 +320,8 @@ bool CHILDMGR_InvokeChildCmd(void* ObjDataPtr, const CFE_SB_Buffer_t*  SbBufPtr)
       else
       {
          
-         sprintf(EventErrStr, "Error dispatching commmand function %d. Command message length %d exceed max %d",
-            FuncCode, MsgLen, sizeof(CHILDMGR_CmdQ_Entry));
+         sprintf(EventErrStr, "Error dispatching commmand function %d. Command message length %ld exceed max %ld",
+            FuncCode, MsgSize, sizeof(CHILDMGR_CmdQEntry_t));
       
       }
    } /* End if command queue intact */
@@ -371,12 +372,12 @@ bool CHILDMGR_PauseTask(uint16* TaskBlockCnt, uint16 TaskBlockLim,
 ** Function: UnusedFuncCode
 **
 */
-static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr)
 {
 
    CFE_MSG_FcnCode_t FuncCode;
 
-   CFE_MSG_GetFcnCode(&SbBufPtr->Msg,&FuncCode);
+   CFE_MSG_GetFcnCode(MsgPtr,&FuncCode);
    CFE_EVS_SendEvent (CHILDMGR_DISPATCH_UNUSED_FUNC_CODE_EID, CFE_EVS_EventType_ERROR,
                       "Unused command function code %d received",FuncCode);
 
@@ -395,7 +396,7 @@ static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
 void ChildMgr_TaskMainCallback(void)
 {
 
-   CHILDMGR_Class*  ChildMgr = NULL; 
+   CHILDMGR_Class_t*  ChildMgr = NULL; 
 
    /*
    ** The child task runs until the parent dies (normal end) or
@@ -430,7 +431,7 @@ void ChildMgr_TaskMainCallback(void)
          else
          {
             ChildMgr->RunStatus = CHILDMGR_RUNTIME_ERR;
-            CFE_EVS_SendEvent(CHILDMGR_RUNTIME_ERR_EID, CFE_EVS_ERROR, "Child task exiting due to null callback function ointer");
+            CFE_EVS_SendEvent(CHILDMGR_RUNTIME_ERR_EID, CFE_EVS_EventType_ERROR, "Child task exiting due to null callback function ointer");
          }
      
       } /* End task while loop */
@@ -456,7 +457,7 @@ void ChildMgr_TaskMainCallback(void)
 void ChildMgr_TaskMainCmdDispatch(void)
 {
 
-   CHILDMGR_Class*  ChildMgr = NULL; 
+   CHILDMGR_Class_t*  ChildMgr = NULL; 
 
    /*
    ** The child task runs until the parent dies (normal end) or
@@ -546,14 +547,13 @@ static void DispatchCmdFunc(CHILDMGR_Class_t* ChildMgr)
 {
 
    bool  ValidCmd;
-   CFE_SB_Buffer_t*  SbBufPtr;
-   CFE_MSG_FcnCode_t FuncCode;
+   const CFE_MSG_Message_t *MsgPtr;
 
-   SbBufPtr = (void*)&(ChildMgr->CmdQ.Entry[ChildMgr->CmdQ.ReadIndex]); //TODO - cfe7.0 (CFE_SB_Buffer_t*)
+   MsgPtr = CFE_MSG_PTR(ChildMgr->CmdQ.Entry[ChildMgr->CmdQ.ReadIndex]); 
 
-   ChildMgr->CurrCmdCode = CFE_MSG_GetFcnCode(&SbBufPtr->Msg,&FuncCode);
-   
-   ValidCmd = (ChildMgr->Cmd[ChildMgr->CurrCmdCode].FuncPtr)(ChildMgr->Cmd[ChildMgr->CurrCmdCode].DataPtr, SbBufPtr);
+   CFE_MSG_GetFcnCode(MsgPtr,&ChildMgr->CurrCmdCode);
+
+   ValidCmd = (ChildMgr->Cmd[ChildMgr->CurrCmdCode].FuncPtr)(ChildMgr->Cmd[ChildMgr->CurrCmdCode].DataPtr, MsgPtr);
 
    if (ValidCmd == true)
    {
@@ -592,8 +592,11 @@ static bool RegChildMgrInstance(CHILDMGR_Class_t* ChildMgr)
 {
    
    bool RetStatus = false;
+   uint32 TaskIdIndex;
    
-   if (DBG_CHILDMGR) OS_printf("CHILDMGR::RegChildMgrInstance() - Task %d, ChildTask.Count %d\n", ChildMgr->TaskId, ChildTask.Count);
+   CFE_ES_TaskID_ToIndex(ChildMgr->TaskId, &TaskIdIndex);   
+   if (DBG_CHILDMGR) OS_printf("CHILDMGR::RegChildMgrInstance() - Task %d, ChildTask.Count %d\n", 
+                               TaskIdIndex, ChildTask.Count);
 
    if (ChildTask.Count <  CHILDMGR_MAX_TASKS)
    {
@@ -616,24 +619,41 @@ static CHILDMGR_Class_t* GetChildMgrInstance(void)
 
    CHILDMGR_Class_t*  Instance = NULL;
    uint16 i = 0;
-   uint32 TaskId = OS_TaskGetId();
+
+   uint32 CurrentTaskIdIndex;   
+   uint32 TaskIdIndex;
    
-   if (DBG_CHILDMGR) OS_printf("CHILDMGR::GetChildMgrInstance() - Task %d\n", TaskId);
+   CFE_Status_t    CfeStatus;
+   CFE_ES_TaskId_t CurrentTaskId;
    
-   while ( i < ChildTask.Count && i < CHILDMGR_MAX_TASKS)
+   CfeStatus = CFE_ES_GetTaskID(&CurrentTaskId);
+
+   if (CfeStatus == CFE_SUCCESS)
    {
-   
-      if (ChildTask.Instance[i] != NULL)
+      CFE_ES_TaskID_ToIndex(CurrentTaskId, &CurrentTaskIdIndex); 
+      if (DBG_CHILDMGR) OS_printf("CHILDMGR::GetChildMgrInstance() - CurrentTaskIndex %d\n", CurrentTaskIdIndex);
+      
+      while ( i < ChildTask.Count && i < CHILDMGR_MAX_TASKS)
       {
-         if (ChildTask.Instance[i]->TaskId == TaskId)
+   
+         if (ChildTask.Instance[i] != NULL)
          {
-            Instance = ChildTask.Instance[i];
-            break;
+            CFE_ES_TaskID_ToIndex(ChildTask.Instance[i]->TaskId, &TaskIdIndex);   
+            if (TaskIdIndex == CurrentTaskIdIndex)
+            {
+               Instance = ChildTask.Instance[i];
+               break;
+            }
          }
-      }
       
-      i++;
-      
+         i++;
+         
+      } /* End tsk loop */
+   } /* End if successfully retreived task ID */
+   else
+   {
+      CFE_EVS_SendEvent(CHILDMGR_Get_CHILD_ERR_EID, CFE_EVS_EventType_ERROR,
+                        "Failed to retrieve current task ID: result = %d", CfeStatus);
    }
    
    if (DBG_CHILDMGR) OS_printf("CHILDMGR::GetChildMgrInstance() - Exit: i=%d, found=%d\n",i,(Instance != NULL));

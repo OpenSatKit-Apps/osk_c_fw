@@ -53,16 +53,16 @@ typedef enum
 /** Local File Function Prototypes **/
 /************************************/
 
-static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Necessity_t Necessity);
+static bool LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Necessity_t Necessity);
 
 static void PrintJsonBuf(const char* JsonBuf, size_t BufLen);
-static boolean ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFileChar,
-                           CJSON_LoadJsonData_t LoadJsonData,
-                           CJSON_LoadJsonDataAlt_t LoadJsonDataAlt, void* UserDataPtr,
-                           boolean CallbackWithUserData);
+static bool ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFileChar,
+                        CJSON_LoadJsonData_t LoadJsonData,
+                        CJSON_LoadJsonDataAlt_t LoadJsonDataAlt, void* UserDataPtr,
+                        bool CallbackWithUserData);
 
-static boolean StubLoadJsonData(size_t JsonFileLen);
-static boolean StubLoadJsonDataAlt(size_t JsonFileLen, void* UserDataPtr);
+static bool StubLoadJsonData(size_t JsonFileLen);
+static bool StubLoadJsonDataAlt(size_t JsonFileLen, void* UserDataPtr);
 
 
 /**********************/
@@ -111,22 +111,22 @@ void CJSON_ObjConstructor(CJSON_Obj_t* Obj, const char* QueryKey,
                           JSONTypes_t JsonType, void* TblData, size_t TblDataLen)
 {
 
-   Obj->Updated    = FALSE;
+   Obj->Updated    = false;
    Obj->TblData    = TblData;
    Obj->TblDataLen = TblDataLen;   
    Obj->Type       = JsonType;
    
-   if (strlen(QueryKey) <= CJSON_MAX_KEY_LEN) {
+   if (strlen(QueryKey) <= CJSON_MAX_KEY_LEN)
+   {
       
       strncpy (Obj->Query.Key, QueryKey, CJSON_MAX_KEY_LEN);
       Obj->Query.KeyLen = strlen(Obj->Query.Key);
    }
-   else {
-   
-      CFE_EVS_SendEvent(CJSON_OBJ_CONSTRUCT_ERR_EID, CFE_EVS_ERROR,
+   else
+   {
+      CFE_EVS_SendEvent(CJSON_OBJ_CONSTRUCT_ERR_EID, CFE_EVS_EventType_ERROR,
                         "Error constructing table. Query key %s exceeds maximum key length %d.",
                         QueryKey, CJSON_MAX_KEY_LEN);
-   
    }
       
 } /* End CJSON_ObjConstructor() */
@@ -145,7 +145,8 @@ size_t CJSON_LoadObjArray(CJSON_Obj_t* Obj, size_t ObjCnt, char* Buf, size_t Buf
    int     i;
    size_t  ObjLoadCnt = 0;
    
-   for (i=0; i < ObjCnt; i++) {
+   for (i=0; i < ObjCnt; i++)
+   {
    
       if (CJSON_LoadObj(&Obj[i], Buf, BufLen)) ObjLoadCnt++;
       
@@ -163,12 +164,12 @@ size_t CJSON_LoadObjArray(CJSON_Obj_t* Obj, size_t ObjCnt, char* Buf, size_t Buf
 **  1. See ProcessFile() for details.
 **  2. The JsonBuf pointer is passed in as an unused UserDataPtr. 
 */
-boolean CJSON_ProcessFile(const char* Filename, char* JsonBuf, 
-                          size_t MaxJsonFileChar, CJSON_LoadJsonData_t LoadJsonData)
+bool CJSON_ProcessFile(const char* Filename, char* JsonBuf, 
+                       size_t MaxJsonFileChar, CJSON_LoadJsonData_t LoadJsonData)
 {
 
 
-   return ProcessFile(Filename, JsonBuf, MaxJsonFileChar, LoadJsonData, StubLoadJsonDataAlt, (void*)JsonBuf, FALSE);
+   return ProcessFile(Filename, JsonBuf, MaxJsonFileChar, LoadJsonData, StubLoadJsonDataAlt, (void*)JsonBuf, false);
 
    
 } /* End CJSON_ProcessFile() */
@@ -180,12 +181,12 @@ boolean CJSON_ProcessFile(const char* Filename, char* JsonBuf,
 ** Notes:
 **  1. See ProcessFile() for details.
 */
-boolean CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf, 
-                             size_t MaxJsonFileChar, CJSON_LoadJsonDataAlt_t LoadJsonDataAlt,
-                             void* UserDataPtr)
+bool CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf, 
+                          size_t MaxJsonFileChar, CJSON_LoadJsonDataAlt_t LoadJsonDataAlt,
+                          void* UserDataPtr)
 {
 
-   return ProcessFile(Filename, JsonBuf, MaxJsonFileChar, StubLoadJsonData, LoadJsonDataAlt, UserDataPtr, TRUE);
+   return ProcessFile(Filename, JsonBuf, MaxJsonFileChar, StubLoadJsonData, LoadJsonDataAlt, UserDataPtr, true);
 
    
 } /* End CJSON_ProcessFileAlt() */
@@ -198,7 +199,7 @@ boolean CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf,
 **    1. See LoadObj()'s switch statement for supported JSON types
 **
 */
-boolean CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen)
+bool CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen)
 {
    
    return LoadObj(Obj, Buf, BufLen, OBJ_REQUIRED);
@@ -213,7 +214,7 @@ boolean CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen)
 **    1. See LoadObj()'s switch statement for supported JSON types
 **
 */
-boolean CJSON_LoadObjOptional(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen)
+bool CJSON_LoadObjOptional(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen)
 {
    
    return LoadObj(Obj, Buf, BufLen, OBJ_OPTIONAL);
@@ -232,7 +233,8 @@ const char* CJSON_ObjTypeStr(JSONTypes_t  ObjType)
    uint8 i = 0;
    
    if ( ObjType >= JSONInvalid &&
-        ObjType <= JSONArray) {
+        ObjType <= JSONArray)
+   {
    
       i =  ObjType;
    
@@ -250,10 +252,10 @@ const char* CJSON_ObjTypeStr(JSONTypes_t  ObjType)
 **    None
 **
 */
-static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Necessity_t Necessity)
+static bool LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Necessity_t Necessity)
 {
    
-   boolean      RetStatus = FALSE;
+   bool         RetStatus = false;
    JSONStatus_t JsonStatus;
    const char   *Value;
    size_t       ValueLen;
@@ -262,36 +264,40 @@ static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Nec
    char         NumberBuf[20], StrBuf[256];
    int          IntValue;
    
-   Obj->Updated = FALSE;
+   Obj->Updated = false;
       
    JsonStatus = JSON_SearchConst(Buf, BufLen, 
                                  Obj->Query.Key, Obj->Query.KeyLen,
                                  &Value, &ValueLen, &ValueType);
                                  
-   if (JsonStatus == JSONSuccess) { 
+   if (JsonStatus == JSONSuccess)
+   {
    
-      CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_DEBUG,
+      CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_EventType_DEBUG,
                         "CJSON_LoadObj: Type=%s, Value=%s, Len=%ld",
                         JsonTypeStr[ValueType], Value, ValueLen);
 
-      switch (ValueType) {
+      switch (ValueType)
+      {
          
          case JSONString:
          
-            if (ValueLen <= Obj->TblDataLen) {
-            
+            if (ValueLen <= Obj->TblDataLen)
+            {
 
                strncpy(StrBuf,Value,ValueLen);
                StrBuf[ValueLen] = '\0';
                
                memcpy(Obj->TblData,StrBuf,ValueLen+1);
-               Obj->Updated = TRUE;
-               RetStatus = TRUE;
+               Obj->Updated = true;
+               RetStatus = true;
             
             }
-            else {
+            else
+            {
                
-               CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_ERROR, "JSON string length %ld exceeds %s's max length %ld", 
+               CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_EventType_ERROR, 
+                                 "JSON string length %ld exceeds %s's max length %ld", 
                                  ValueLen, Obj->Query.Key, Obj->TblDataLen);
             
             }
@@ -302,13 +308,15 @@ static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Nec
             strncpy(NumberBuf,Value,ValueLen);
             NumberBuf[ValueLen] = '\0';
             IntValue = (int)strtol(NumberBuf, &ErrCheck, 10);
-			   if (ErrCheck != NumberBuf) {
+            if (ErrCheck != NumberBuf)
+            {
                memcpy(Obj->TblData,&IntValue,sizeof(int));
-               Obj->Updated = TRUE;
-               RetStatus = TRUE;
+               Obj->Updated = true;
+               RetStatus = true;
             }
-            else {
-               CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_ERROR,
+            else
+            {
+               CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_EventType_ERROR,
                                  "CJSON number conversion error for value %s",
                                  NumberBuf);
             }
@@ -317,7 +325,7 @@ static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Nec
 
          case JSONArray:
          
-            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_INFORMATION,
+            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_EventType_INFORMATION,
                               "JSON array %s, len = %ld", Value, ValueLen);
             PrintJsonBuf(Value, ValueLen);
          
@@ -325,7 +333,7 @@ static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Nec
 
          case JSONObject:
          
-            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_INFORMATION,
+            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_EventType_INFORMATION,
                               "JSON array %s, len = %ld", Value, ValueLen);
             PrintJsonBuf(Value, ValueLen);
          
@@ -333,18 +341,19 @@ static boolean LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen, OBJ_Nec
 
          default:
          
-            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_ERROR,
+            CFE_EVS_SendEvent(CJSON_LOAD_OBJ_ERR_EID, CFE_EVS_EventType_ERROR,
                               "Unsupported JSON type %s returned for query %s", 
                               JsonTypeStr[ValueType], Obj->Query.Key);
       
       } /* End ValueType switch */
       
    }/* End if successful search */
-   else {
+   else 
+   {
    
       if (Necessity == OBJ_REQUIRED)
       {
-         CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_INFORMATION,
+         CFE_EVS_SendEvent(CJSON_LOAD_OBJ_EID, CFE_EVS_EventType_INFORMATION,
                            "JSON search error for query %s. Status = %s.", 
                            Obj->Query.Key, JsonStatusStr[JsonStatus]);
       }
@@ -399,38 +408,34 @@ static void PrintJsonBuf(const char* JsonBuf, size_t BufLen)
 **     structure. 
 **
 */
-static boolean ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFileChar,
-                           CJSON_LoadJsonData_t LoadJsonData,
-                           CJSON_LoadJsonDataAlt_t LoadJsonDataAlt, void* UserDataPtr,
-                           boolean CallbackWithUserData)
+static bool ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFileChar,
+                        CJSON_LoadJsonData_t LoadJsonData,
+                        CJSON_LoadJsonDataAlt_t LoadJsonDataAlt, void* UserDataPtr,
+                        bool CallbackWithUserData)
 {
 
-   int          FileHandle;
-   int32        ReadStatus;
-   JSONStatus_t JsonStatus;
-
-   boolean  RetStatus = FALSE;
+   bool  RetStatus = false;
    
-   FileHandle = OS_open(Filename, OS_READ_ONLY, 0);
+   osal_id_t     FileHandle;
+   int32         SysStatus;
+   int32         ReadStatus;
+   JSONStatus_t  JsonStatus;
+   os_err_name_t OsErrStr;
+   
+   SysStatus = OS_OpenCreate(&FileHandle, Filename, OS_FILE_FLAG_NONE, OS_READ_ONLY);
    
    /*
    ** Read entire JSON table into buffer. Logic kept very simple and JSON
    ** validate will catch if entire file wasn't read.
    */
-   if (FileHandle >= 0) {
+   if (SysStatus == OS_SUCCESS)
+   {
 
       ReadStatus = OS_read(FileHandle, JsonBuf, MaxJsonFileChar);
 
-      if (ReadStatus == OS_FS_ERROR) {
-
-         CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_ERROR, 
-                           "CJSON error reading file %s. Status = 0x%08X",
-                           Filename, ReadStatus);
-
-      }
-      else
+      if (ReadStatus >= 0)
       {
-         
+
          if (DBG_JSON) PrintJsonBuf(JsonBuf, ReadStatus);
          
          /* ReadStatus equals buffer len */
@@ -451,19 +456,28 @@ static boolean ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFi
          else
          {
          
-            CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_ERROR, 
+            CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_EventType_ERROR, 
                               "CJSON error validating file %s.  Status = %s.",
                               Filename, JsonStatusStr[JsonStatus]);
 
          }
-         
-      } /* End if valid read */
-   }/* End if valid open */
-   else {
 
-      CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_ERROR, "CJSON error opening file %s. Status = 0x%08X", 
-                        Filename, FileHandle);
-      
+      } /* End if valid read */
+      else
+      {
+         
+         CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_EventType_ERROR, 
+                           "CJSON error reading file %s. Status = %d",
+                           Filename, ReadStatus);
+         
+      } /* End if invalid read */
+   }/* End if valid open */
+   else
+   {
+      OS_GetErrorName(SysStatus, &OsErrStr);
+      CFE_EVS_SendEvent(CJSON_PROCESS_FILE_ERR_EID, CFE_EVS_EventType_ERROR,
+                        "CJSON error opening file %s. Status = %s", 
+                        Filename, OsErrStr);
    }
    
    return RetStatus;
@@ -479,14 +493,14 @@ static boolean ProcessFile(const char* Filename, char* JsonBuf, size_t MaxJsonFi
 **      therefore it should never get executed.
 **
 */
-static boolean StubLoadJsonData(size_t JsonFileLen)
+static bool StubLoadJsonData(size_t JsonFileLen)
 {
    
-   CFE_EVS_SendEvent(CJSON_INTERNAL_ERR_EID, CFE_EVS_CRITICAL, 
+   CFE_EVS_SendEvent(CJSON_INTERNAL_ERR_EID, CFE_EVS_EventType_CRITICAL, 
       "StubLoadJsonData() called, JsonFileLen %ld. Code structural error that requires a developer",
       JsonFileLen);
       
-   return FALSE;
+   return false;
 
 } /* End StubLoadJsonData() */
 
@@ -499,13 +513,13 @@ static boolean StubLoadJsonData(size_t JsonFileLen)
 **      therefore it should never get executed.
 **
 */
-static boolean StubLoadJsonDataAlt(size_t JsonFileLen, void* UserDataPtr)
+static bool StubLoadJsonDataAlt(size_t JsonFileLen, void* UserDataPtr)
 {
    
-   CFE_EVS_SendEvent(CJSON_INTERNAL_ERR_EID, CFE_EVS_CRITICAL, 
+   CFE_EVS_SendEvent(CJSON_INTERNAL_ERR_EID, CFE_EVS_EventType_CRITICAL, 
       "StubLoadJsonDataAlt() called, JsonFileLen %ld, UserDataPtr 0x%p. Code structural error that requires a developer",
       JsonFileLen, UserDataPtr);
 
-   return FALSE;
+   return false;
 
 } /* End StubLoadJsonDataAlt() */

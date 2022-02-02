@@ -50,7 +50,7 @@
 /** Type Definitions **/
 /**********************/
 
-typedef bool (*CMDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
+typedef bool (*CMDMGR_CmdFuncPtr_t) (void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 /*
 ** Alternate command counters allow an individual command to have its own 
@@ -135,7 +135,7 @@ void CMDMGR_ResetStatus(CMDMGR_Class_t* CmdMgr);
 ** Function: CMDMGR_DispatchFunc
 **
 */
-bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr,  const CFE_SB_Buffer_t* SbBufPtr);
+bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr,  const CFE_MSG_Message_t *MsgPtr);
 
 
 /******************************************************************************

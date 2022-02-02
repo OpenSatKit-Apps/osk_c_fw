@@ -50,7 +50,7 @@ static const char* BoolStr[] = {
 /** File Function Prototypes **/
 /******************************/
 
-static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 
 /******************************************************************************
@@ -174,24 +174,26 @@ void CMDMGR_ResetStatus(CMDMGR_Class_t* CmdMgr)
 **      if an app wants a message response then it should publish the format. 
 **
 */
-bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_Buffer_t* SbBufPtr)
+bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_MSG_Message_t *MsgPtr)
 {
 
    bool   ValidCmd = false;
    bool   ChecksumValid;
    size_t UserDataLen; 
+   CFE_MSG_Size_t    MsgSize;
    CFE_MSG_FcnCode_t FuncCode;
 
-   UserDataLen = CFE_SB_GetUserDataLength(&SbBufPtr->Msg);
+   UserDataLen = CFE_SB_GetUserDataLength(MsgPtr);
 
-   CFE_MSG_GetFcnCode(&SbBufPtr->Msg, &FuncCode);
-   CFE_MSG_ValidateChecksum(&SbBufPtr->Msg, &ChecksumValid);
-   
-   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [0]=0x%X, [1]=0x%X, [2]=0x%X, [3]=0x%X\n",
-                             ((uint8*)SbBufPtr)[0],((uint8*)SbBufPtr)[1],((uint8*)SbBufPtr)[2],((uint8*)SbBufPtr)[3]);
-   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [4]=0x%X, [5]=0x%X, [6]=0x%X, [7]=0x%X\n",
-                             ((uint8*)SbBufPtr)[4],((uint8*)SbBufPtr)[5],((uint8*)SbBufPtr)[6],((uint8*)SbBufPtr)[7]);
-   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): FuncCode %d, DataLen %d\n", FuncCode,UserDataLen);
+   CFE_MSG_GetSize(MsgPtr, &MsgSize);
+   CFE_MSG_GetFcnCode(MsgPtr, &FuncCode);
+   CFE_MSG_ValidateChecksum(MsgPtr, &ChecksumValid);
+
+   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): MsgSize %d, DataLen %ld FuncCode %d\n", (int)MsgSize,UserDataLen,FuncCode);
+   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [0]=0x%02X, [1]=0x%02X, [2]=0x%02X, [3]=0x%02X\n",
+                             ((uint8*)MsgPtr)[0],((uint8*)MsgPtr)[1],((uint8*)MsgPtr)[2],((uint8*)MsgPtr)[3]);
+   if (DBG_CMDMGR) OS_printf("CMDMGR_DispatchFunc(): [4]=0x%02X, [5]=0x%02X, [6]=0x%02X, [7]=0x%02X\n",
+                             ((uint8*)MsgPtr)[4],((uint8*)MsgPtr)[5],((uint8*)MsgPtr)[6],((uint8*)MsgPtr)[7]);
 
    if (FuncCode < CMDMGR_CMD_FUNC_TOTAL)
    {
@@ -202,7 +204,7 @@ bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_Buffer_t* SbBufPtr
          if (ChecksumValid)
          {
 
-            ValidCmd = (CmdMgr->Cmd[FuncCode].FuncPtr)(CmdMgr->Cmd[FuncCode].DataPtr, SbBufPtr);
+            ValidCmd = (CmdMgr->Cmd[FuncCode].FuncPtr)(CmdMgr->Cmd[FuncCode].DataPtr, MsgPtr);
 
          } /* End if valid checksum */
          else
@@ -217,7 +219,7 @@ bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_Buffer_t* SbBufPtr
       {
 
          CFE_EVS_SendEvent (CMDMGR_DISPATCH_INVALID_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
-                            "Invalid command user data length %d, expected %d",
+                            "Invalid command user data length %ld, expected %d",
                             UserDataLen, CmdMgr->Cmd[FuncCode].UserDataLen);
 
       }
@@ -254,12 +256,12 @@ bool CMDMGR_DispatchFunc(CMDMGR_Class_t* CmdMgr, const CFE_SB_Buffer_t* SbBufPtr
 ** Function: UnusedFuncCode
 **
 */
-static bool UnusedFuncCode(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr)
+static bool UnusedFuncCode(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr)
 {
 
    CFE_MSG_FcnCode_t FuncCode;
    
-   CFE_MSG_GetFcnCode(&SbBufPtr->Msg, &FuncCode);
+   CFE_MSG_GetFcnCode(MsgPtr, &FuncCode);
    CFE_EVS_SendEvent (CMDMGR_DISPATCH_UNUSED_FUNC_CODE_ERR_EID, CFE_EVS_EventType_ERROR,
                       "Unused command function code %d received",FuncCode);
 

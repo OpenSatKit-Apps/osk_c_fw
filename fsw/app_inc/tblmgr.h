@@ -71,7 +71,7 @@
 /*
 ** Load Type options
 **
-** - If the user table format allows sparse definitions then it is up to teh user 
+** - If the user table format allows sparse definitions then it is up to the user 
 **   to define how the replace table option behaves when all of the table elements 
 **   are not defined.
 */
@@ -222,7 +222,7 @@ const TBLMGR_Tbl_t* TBLMGR_GetTblStatus(TBLMGR_Class_t* TblMgr, uint8 TblId);
 **     during registration 
 ** 
 */
-bool TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
+bool TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 
 /******************************************************************************
@@ -234,7 +234,7 @@ bool TBLMGR_LoadTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
 **     during registration 
 ** 
 */
-bool TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_SB_Buffer_t* SbBufPtr);
+bool TBLMGR_DumpTblCmd(void* ObjDataPtr, const CFE_MSG_Message_t *MsgPtr);
 
 
 /******************************************************************************

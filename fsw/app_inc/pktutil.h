@@ -114,11 +114,11 @@ typedef struct
 typedef struct
 {
 
-   uint8 Header[CFE_SB_CMD_HDR_SIZE];
+   CFE_MSG_CommandHeader_t  CmdHeader;
 
 } PKTUTIL_NoParamCmdMsg_t;
-#define PKTUTIL_NO_PARAM_CMD_DATA_LEN  ((sizeof(PKTUTIL_NoParamCmdMsg_t) - CFE_SB_CMD_HDR_SIZE))
-
+#define PKTUTIL_NO_PARAM_CMD_DATA_LEN  ((sizeof(PKTUTIL_NoParamCmdMsg_t) - sizeof(CFE_MSG_CommandHeader_t)))
+#define PKTUTIL_NO_PARAM_CMD_LEN       (sizeof(PKTUTIL_NoParamCmdMsg_t))
 
 /************************/
 /** Exported Functions **/
@@ -129,7 +129,7 @@ typedef struct
 ** Function: PktUtil_IsPacketFiltered
 **
 */
-bool PktUtil_IsPacketFiltered(const CFE_SB_MsgPtr_t MessagePtr, const PktUtil_Filter_t *Filter);
+bool PktUtil_IsPacketFiltered(const CFE_SB_Buffer_t* MessagePtr, const PktUtil_Filter_t *Filter);
 
 
 /******************************************************************************

@@ -88,10 +88,9 @@ typedef struct
 } FileUtil_FileInfo_t;
 
 typedef struct
-{
-
-   bool   IsOpen;
-   char*  Name;
+{ 
+   bool         IsOpen;
+   const char*  Name;
 
 } FileUtil_CheckFileState_t;
 
@@ -145,7 +144,7 @@ bool FileUtil_AppendPathSep(char *DirName, uint16 BufferLen);
 ** returns file state (FileUtil_FileState) and optionally includes the file size
 ** and time for existing files.
 */
-FileUtil_FileInfo_t FileUtil_GetFileInfo(char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime);
+FileUtil_FileInfo_t FileUtil_GetFileInfo(const char *Filename, uint16 FilenameBufLen, bool IncludeSizeTime);
 
 
 /******************************************************************************

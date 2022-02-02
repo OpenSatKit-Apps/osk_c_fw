@@ -49,6 +49,7 @@ bool PktUtil_IsPacketFiltered(const CFE_SB_Buffer_t* SbBufPtr, const PktUtil_Fil
 
    bool PacketIsFiltered = true;
    CFE_TIME_SysTime_t PacketTime;
+   CFE_MSG_SequenceCount_t SeqCnt;
    uint16 FilterValue;
    uint16 Seconds;
    uint16 Subsecs;

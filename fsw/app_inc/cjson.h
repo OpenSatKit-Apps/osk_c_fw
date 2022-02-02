@@ -79,7 +79,7 @@ typedef struct
 
    void*          TblData;
    size_t         TblDataLen;
-   boolean        Updated;
+   bool           Updated;
    JSONTypes_t    Type;
    CJSON_Query_t  Query;
 
@@ -107,8 +107,8 @@ typedef struct
 
 
 /* User callback function to load table data */
-typedef boolean (*CJSON_LoadJsonData_t)(size_t JsonFileLen);
-typedef boolean (*CJSON_LoadJsonDataAlt_t)(size_t JsonFileLen, void* UserDataPtr);
+typedef bool (*CJSON_LoadJsonData_t)(size_t JsonFileLen);
+typedef bool (*CJSON_LoadJsonDataAlt_t)(size_t JsonFileLen, void* UserDataPtr);
 
 
 /************************/
@@ -137,7 +137,7 @@ void CJSON_ObjConstructor(CJSON_Obj_t* Obj, const char* QueryKey,
 **   2. See file prologue for supported JSON types.
 **
 */
-boolean CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
+bool CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
 
 
 /******************************************************************************
@@ -150,7 +150,7 @@ boolean CJSON_LoadObj(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
 **   2. See file prologue for supported JSON types.
 **
 */
-boolean CJSON_LoadObjOptional(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
+bool CJSON_LoadObjOptional(CJSON_Obj_t* Obj, const char* Buf, size_t BufLen);
 
 
 /******************************************************************************
@@ -179,8 +179,8 @@ const char* CJSON_ObjTypeStr(JSONTypes_t  ObjType);
 **  1. Takes care of all generic table processing and validation. User's 
 **     callback function performs table-specific data processing.
 */
-boolean CJSON_ProcessFile(const char* Filename, char* JsonBuf, 
-                          size_t MaxJsonFileChar, CJSON_LoadJsonData_t LoadJsonData);
+bool CJSON_ProcessFile(const char* Filename, char* JsonBuf, 
+                       size_t MaxJsonFileChar, CJSON_LoadJsonData_t LoadJsonData);
 
 
 /******************************************************************************
@@ -192,8 +192,8 @@ boolean CJSON_ProcessFile(const char* Filename, char* JsonBuf,
 **  2. Same functionality as CJSON_ProcessFile except the callback function
 **     has the UserDataPtr passed as a parameter.
 */
-boolean CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf, 
-                            size_t MaxJsonFileChar, CJSON_LoadJsonDataAlt_t LoadJsonDataAlt,
-                            void* UserDataPtr);
+bool CJSON_ProcessFileAlt(const char* Filename, char* JsonBuf, 
+                          size_t MaxJsonFileChar, CJSON_LoadJsonDataAlt_t LoadJsonDataAlt,
+                          void* UserDataPtr);
 
 #endif /* _cjson_ */
