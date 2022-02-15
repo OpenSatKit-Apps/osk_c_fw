@@ -24,14 +24,64 @@
 -->
 <PackageFile xmlns="http://www.ccsds.org/schema/sois/seds">
   <Package name="OSK_C_FW" shortDescription="OpenSatKit application framework for C language">
-  
+
+     <!-- OSK_C_FW::CmdMgr -->
+     
+    <Define name="NOOP_CC"      value="0" />
+    <Define name="RESET_CC"     value="1" />
+    <Define name="LOAD_TBL_CC"  value="2" />
+    <Define name="DUMP_TBL_CC"  value="3" />
+    <Define name="APP_BASE_CC"  value="10" />
+
+
     <DataTypeSet>
+ 
+      <!--***********************************-->
+      <!--**** DataTypeSet:  Entry Types ****-->
+      <!--***********************************-->
     
-      <EnumeratedDataType name="TblLoadOptions" shortDescription="Defines options for a table load command " >
+      <!-- OSK_C_FW::FileUtil -->
+
+      <EnumeratedDataType name="FileState" shortDescription="Define file state possibilities" >
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+        <EnumerationList>
+          <Enumeration label="FILENAME_INVALID" value="1" shortDescription="" />
+          <Enumeration label="FILE_NONEXISTENT" value="2" shortDescription="" />
+          <Enumeration label="FILE_OPEN"        value="3" shortDescription="" />
+          <Enumeration label="FILE_CLOSED"      value="4" shortDescription="" />
+          <Enumeration label="FILE_IS_DIR"      value="5" shortDescription="" />
+        </EnumerationList>
+      </EnumeratedDataType>
+    
+      <!-- OSK_C_FW::PktUtil -->
+
+      <EnumeratedDataType name="PktFilterOptions" shortDescription="" >
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+        <EnumerationList>
+          <Enumeration label="FILTER_ALWAYS"     value="1" shortDescription="" />
+          <Enumeration label="FILTER_BY_SEQ_CNT" value="2" shortDescription="" />
+          <Enumeration label="FILTER_BY_TIME"    value="3" shortDescription="" />
+          <Enumeration label="FILTER_NEVER"      value="4" shortDescription="" />
+        </EnumerationList>
+      </EnumeratedDataType>
+
+      <!-- OSK_C_FW::StateRep -->
+
+      <EnumeratedDataType name="StateRepOptions" shortDescription="" >
+        <IntegerDataEncoding sizeInBits="16" encoding="unsigned" />
+        <EnumerationList>
+          <Enumeration label="NEW_REPORT"   value="1" shortDescription="Only report new state since last report" />
+          <Enumeration label="MERGE_REPORT" value="2" shortDescription="Boolean OR new states with previous report" />
+        </EnumerationList>
+      </EnumeratedDataType>
+
+     <!-- OSK_C_FW::TblMgr -->
+
+      <EnumeratedDataType name="TblLoadOptions" shortDescription="Defines options for a table load command" >
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
         <EnumerationList>
           <Enumeration label="REPLACE" value="0" shortDescription="Replace the entire table" />
-          <Enumeration label="UPDATE" value="1" shortDescription="Update only the entries provided. Sparse update functionality is app-specific" />
+          <Enumeration label="UPDATE"  value="1" shortDescription="Update only the entries provided. Sparse update functionality is app-specific" />
         </EnumerationList>
       </EnumeratedDataType>
 
@@ -39,9 +89,9 @@
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
         <EnumerationList>
           <Enumeration label="UNDEFINED" value="0" shortDescription="Undefined value that should never occur" />
-          <Enumeration label="REGISTER" value="1" shortDescription="App registered the table with the OSK App Framework" />
-          <Enumeration label="LOAD" value="2" shortDescription="Table data loaded from a file" />
-          <Enumeration label="DUMP" value="3" shortDescription="Table data dumped to a file" />
+          <Enumeration label="REGISTER"  value="1" shortDescription="App registered the table with the OSK App Framework" />
+          <Enumeration label="LOAD"      value="2" shortDescription="Table data loaded from a file" />
+          <Enumeration label="DUMP"      value="3" shortDescription="Table data dumped to a file" />
         </EnumerationList>
       </EnumeratedDataType>
 
@@ -49,12 +99,11 @@
         <IntegerDataEncoding sizeInBits="8" encoding="unsigned" />
         <EnumerationList>
           <Enumeration label="UNDEFINED" value="0" shortDescription="Undefined value that should never occur" />
-          <Enumeration label="INVALID" value="1" shortDescription="Table action was invalid and failed" />
-          <Enumeration label="VALID" value="2" shortDescription="Table action was valid and succeeded" />
+          <Enumeration label="INVALID"   value="1" shortDescription="Table action was invalid and failed" />
+          <Enumeration label="VALID"     value="2" shortDescription="Table action was valid and succeeded" />
         </EnumerationList>
       </EnumeratedDataType>
     
-    </DataTypeSet>
-    
+    </DataTypeSet>    
   </Package>
 </PackageFile>
