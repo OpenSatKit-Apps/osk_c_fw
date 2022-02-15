@@ -1,9 +1,0 @@
-{
-  "time-stamp": "02/08/2022-05:58:44",
-  "title": "Build and Run the cFS",
-  "objective": [
-    "Describe how to build the default cFSAT cFS target, how ",
-    "to run the target, and how interact with the target using ",
-    "cFSAT's GUI."
-  ]
-}
